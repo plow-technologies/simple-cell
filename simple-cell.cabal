@@ -13,8 +13,10 @@ Library
   Default-Language:     Haskell2010
   HS-Source-Dirs:       src
   GHC-Options:          -Wall
-  Exposed-Modules:      SimpleStore.Cell
+  Exposed-Modules:      SimpleStore.Cell                        
   Other-Modules:        SimpleStore.Cell.Internal
+                        SimpleStore.Cell.Types
+                        SimpleStore.Cell.DIG                                        
   Build-Depends:        base >= 4 && < 5
                       , simple-store
                       , text >= 1.1.0.1 
