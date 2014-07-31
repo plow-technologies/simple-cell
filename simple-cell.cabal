@@ -5,7 +5,7 @@ Maintainer:             Scott <scott.murphy@plowtech.net>
 License:                BSD3
 License-File:           LICENSE
 Synopsis:               Batch Processing of resumable states
- Description:           SimpleCell uses SimpleStore and self generating keys to create batch operations on datatypes
+Description:            SimpleCell uses SimpleStore and self generating keys to create batch operations on datatypes
 Cabal-Version:          >= 1.10
 Build-Type:             Simple
 
@@ -16,6 +16,7 @@ Library
   Exposed-Modules:      SimpleStore.Cell
   Other-Modules:        SimpleStore.Cell.Internal
   Build-Depends:        base >= 4 && < 5
+                      , simple-store
                       , text >= 1.1.0.1 
                       , system-filepath >= 0.4.10
                       , system-fileio >= 0.3.12
@@ -23,8 +24,6 @@ Library
                       , stm >= 2.4.3
                       , basic-prelude
                       , cereal >= 0.4.0.1
-                      , safecopy == 0.8.3
-                      , acid-state == 0.12.2.7569
                       , containers >= 0.5.0.0
                       , bytestring >= 0.10.0.2
                       , directed-keys >= 0.2.1
@@ -42,13 +41,12 @@ Test-Suite spec
   Build-Depends:        base
                       , hspec
                       , mtl
+                      , simple-store
                       , template-haskell
                       , cereal 
                       , lens
                       , text >= 1.1.0.1
                       , hspec
-                      , safecopy
-                      , acid-state 
                       , containers
                       , bytestring
                       , basic-prelude
