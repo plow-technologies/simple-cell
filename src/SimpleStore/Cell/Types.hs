@@ -12,33 +12,33 @@
     
 |-} 
 
-
-
 module SimpleStore.Cell.Types (StoreCellError(..)
                             , CellKey (..)
                             , CellKeyStore (..)
                             , SimpleCell (..)
+                            , CellCore (..)
+                            , FileKey (..)
                             ) where
 
 
 -- System 
 import Filesystem.Path.CurrentOS hiding (root)
-import Filesystem 
+
 
 -- Controls
-import Prelude (show, (++) )
+
 import CorePrelude hiding (try,catch, finally)
 import Control.Concurrent.STM
-import Control.Monad.Reader ( ask )
-import Control.Monad.State  
 
-import Control.Concurrent.Async
-import Control.Exception
+
+
+
+
 
 -- Typeclasses
 
-import Data.Foldable
-import Data.Traversable
+
+
 
 import GHC.Generics
 
@@ -51,7 +51,7 @@ import qualified Data.Map as M
 import qualified Data.Set as S
 
 -- Strings /Monomorphs 
-import qualified Data.Text as T
+
 
 import SimpleStore
 
@@ -78,13 +78,6 @@ data CellKey k src dst tm st = CellKey { getKey :: st -> (DirectedKeyRaw k src d
 
 newtype FileKey = FileKey { getFileKey :: Text} deriving (Show,Generic,Ord,Eq)
 
-  
-makeFileKey :: CellKey k src dst tm st -> st -> FileKey 
-makeFileKey ck s = FileKey (codeCellKeyFilename ck . getKey ck $ s)
-
-unmakeFileKey :: CellKey k src dst tm st
-                       -> FileKey -> Either Text (DirectedKeyRaw k src dst tm)
-unmakeFileKey ck s = (decodeCellKeyFilename ck).getFileKey $ s
 
 -- |'CellCoreLive' and 'CellCoreDormant' both define maps to acid states
 -- Live means currently loaded into memory
@@ -100,8 +93,6 @@ data CellCore  k src dst tm tvlive stdormant = CellCore {
 newtype CellKeyStore  = CellKeyStore { getCellKeyStore :: (S.Set FileKey)}
     deriving (Show,Generic)
 
-emptyCellKeyStore :: CellKeyStore
-emptyCellKeyStore = CellKeyStore S.empty
 
 
 -- | Transactional Cell Core
@@ -124,49 +115,3 @@ data StoreCellError  = InsertFail    !Text
                      | DeleteFail    !Text
                      | StateNotFound !Text
 
--- queryCellStore :: (QueryEvent event, Ord tm, Ord dst, Ord src, Ord k) =>
---      SimpleCell k src dst tm (EventState event) stdormant
---      -> DirectedKeyRaw k src dst tm -> event -> IO (Maybe (EventResult event))
--- queryCellStore cell key event = do
---   liveMap  <- readTVarIO . ccLive . cellCore $ cell
---   case M.lookup key liveMap of
---     (Just st) ->  $ query' st event >>= return . Just
---     Nothing -> return Nothing
-
--- updateCellStore :: (UpdateEvent event, Ord tm, Ord dst, Ord src, Ord k) =>
---                          SimpleCell
---                            k
---                            src
---                            dst
---                            tm
---                            (EventState event)
---                            stdormant
---                          -> DirectedKeyRaw k src dst tm
---                          -> event
---                          -> IO
---                               (Maybe (EventResult event))    
--- updateCellStore cell key event = do
---   liveMap <- readTVarIO . ccLive . cellCore $ cell
---   case M.lookup key liveMap of
---     (Just st) -> do
---       let updateInnerFcn = do
---             rslt <- (update' st event) 
---             createCheckpoint st
---             return rslt
---       rslt <-  updateInnerFcn
---       return . Just $ rslt 
---     Nothing -> return Nothing
-
-
--- withSimpleStore :: (Ord tm, Ord dst, Ord src, Ord k) =>
---                        SimpleCell k src dst tm stlive stdormant
---                        -> DirectedKeyRaw k src dst tm
---                        -> (SimpleStore stlive -> IO a)
---                        -> IO (Maybe a)
--- withSimpleStore cell key func = do
---   liveMap <- readTVarIO . ccLive . cellCore $ cell
---   case M.lookup key liveMap of
---     (Just st) -> do
---       rslt <- func st
---       return . Just $ rslt
---     Nothing -> return Nothing
