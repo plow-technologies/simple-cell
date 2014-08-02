@@ -14,60 +14,62 @@
 
 
 
-module SimpleStore.Cell.DIG ( -- initializeSimpleCell
-                            -- , insertStore
-                            -- , updateStore
-                            -- , deleteStore
-                            -- , storeFoldlWithKey
-                            -- , storeTraverseWithKey
-                            -- , createCellCheckPointAndClose
-                            ) where
+module SimpleStore.Cell.DIG (
+  initializeSimpleCell
+  , insertStore
+  , updateStore
+  , deleteStore
+  , storeFoldlWithKey
+  , storeTraverseWithKey
+  , createCellCheckPointAndClose
+  ) where
 
 
 
 
 
 -- -- System 
--- import Filesystem.Path.CurrentOS hiding (root)
--- import Filesystem 
+import           Filesystem.Path.CurrentOS hiding (root)
+import           Filesystem
 
 -- -- Controls
-import           Prelude (show, (++) ,($), (.))
+import           Prelude (show, (++) ,($), (.),Ord, (==) , print, undefined)
 import           Data.Either
 import           System.IO (IO)
 import           Control.Monad
--- import           Control.Applicative
+import           Control.Applicative
+import           Control.Exception
 -- import CorePrelude hiding (try,catch, finally)
--- import Control.Concurrent.STM
+import           Control.Concurrent.STM
 -- import Control.Monad.Reader ( ask )
 -- import Control.Monad.State  
 
--- import Control.Concurrent.Async
--- import Control.Exception
+import           Control.Concurrent.Async
 
--- -- Typeclasses
 
--- import Data.Foldable
--- import Data.Traversable
+-- Typeclasses
 
+import           Data.Foldable
+import           Data.Traversable
 -- import GHC.Generics
--- import Data.Serialize
+import           Data.Serialize
 
 
 -- -- Component Libraries
 -- import DirectedKeys.Types
 
 -- -- Containers 
--- import qualified Data.Map as M 
+import qualified Data.Map as M
 import qualified Data.Set as S
-import           SimpleStore.Cell.Types
--- import Plow.Extras.List
+
+import           Plow.Extras.List
 -- -- Strings /Monomorphs 
+
 import           Data.Text
 
 -- Component Libraries
 import           DirectedKeys.Types
-
+import           SimpleStore.Cell.Types
 import           SimpleStore
 
 
@@ -83,6 +85,9 @@ unmakeFileKey :: CellKey k src dst tm st
                         -> FileKey -> Either Text (DirectedKeyRaw k src dst tm)
 unmakeFileKey ck s = (decodeCellKeyFilename ck).getFileKey $ s
 
+makeWorkingStatePath pdir rdir nsp = do 
+    void $ when (nsp == "") (fail "--> Cell key led to empty state path")
+    return $ pdir </> rdir </> (fromText nsp)
 
 -- |Cell Core interaction functions 
 -- The cell core is designed to be private... These accessors are used for other functions
@@ -121,20 +126,20 @@ getSimpleCellPathFileKey st = getSimpleStore st
 
 -- | Warning, inserting a state that is already inserted throws an exception 
 
-insertStore :: (Ord k, Ord src, Ord dst, Ord tm, Serialize t,Serialize st) =>
+insertStore :: (Ord k, Ord src, Ord dst, Ord tm,Serialize st) =>
                      CellKey k src dst tm st
-                     -> SimpleCell k src dst tm st (SimpleStore st)
+                     -> SimpleCell k src dst tm st (SimpleStore CellKeyStore)
                      -> st
-                     -> IO (SimpleStore st)
-insertStore ck   (SimpleCell (CellCore tlive tvarFStore) _ pdir rdir)  st = do
+                     -> IO (SimpleStore st)                     
+insertStore ck (SimpleCell (CellCore tlive tvarFStore) _ pdir rdir)  st = do
   let newStatePath = (codeCellKeyFilename ck).(getKey ck) $ st
   fullStatePath <- makeWorkingStatePath pdir rdir newStatePath
   let fk = makeFileKey ck st
   fStore <- readTVarIO tvarFStore
   void $ insertSimpleCellPathFileKey fStore fk    
-  eSimpleStore <- (makeSimpleStore (encodeString fullStatePath) st )
+  eSimpleStore <- (makeSimpleStore fullStatePath st )
   case eSimpleStore of
-    Left e -> fail e
+    Left e -> (deleteSimpleCellPathFileKey fStore fk) >> (fail.show $ e)
     Right simpleStore -> do 
       atomically (stmInsert simpleStore)                                
       atomically $ writeTVar tvarFStore fStore
@@ -146,113 +151,100 @@ insertStore ck   (SimpleCell (CellCore tlive tvarFStore) _ pdir rdir)  st = do
 
 
 
--- makeWorkingStatePath pdir rdir nsp = do 
---     void $ when (nsp == "") (fail "--> Cell key led to empty state path")
---     return $ pdir </> rdir </> (fromText nsp)
-
--- updateStore ck  initialTargetState (SimpleCell (CellCore tlive tvarFStore) _ _pdir _rdir )  simpleSt st = do
---   atomically $ stmInsert simpleSt
---    where 
---      stmInsert st' = do 
---        liveMap <- readTVar tlive        
---        writeTVar tlive $ M.insert (getKey ck st) st' liveMap
-
--- deleteStore :: (Ord k, Ord src, Ord dst, Ord tm) =>
---                      CellKey k src dst tm st
---                      -> SimpleCell
---                           k src dst tm t (CellKeyStore)
---                      -> st
---                      -> IO ()
--- deleteStore ck (SimpleCell (CellCore tlive tvarFStore) _ pdir rdir) st = do 
---   let targetStatePath = (codeCellKeyFilename ck).(getKey ck) $ st 
---   void $ atomically stmDelete
---   fStore <- readTVarIO tvarFStore
---   let fk = makeFileKey ck st  
---   void $ deleteSimpleCellPathFileKey fStore fk
---   createCheckpoint fStore
---   atomically $ writeTVar tvarFStore fStore
---   np <- (makeWorkingStatePath pdir rdir targetStatePath)
---   removeTree np
---      where
---         stmDelete = do 
---           liveMap <- readTVar tlive
---           writeTVar tlive $ M.delete (getKey ck st) liveMap
-
--- storeFoldlWithKey :: t6   -> SimpleCell t t1 t2 t3 t4 t5
---                            -> (t6
---                                -> DirectedKeyRaw t t1 t2 t3 -> SimpleStore t4 -> IO b -> IO b)
---                            -> IO b
---                            -> IO b
-
--- storeFoldlWithKey ck (SimpleCell (CellCore tlive _) _ _ _) fldFcn seed = do 
---   liveMap <- readTVarIO tlive 
---   M.foldWithKey (\key simpleSt b -> do
---                              st <- getSimpleStore simpleSt
---                              fldFcn ck key st  b) seed liveMap
+updateStore
+  :: (Ord t3, Ord t2, Ord t1, Ord t) =>
+     CellKey t t1 t2 t3 st
+     -> SimpleCell t t1 t2 t3 t4 t5 -> SimpleStore t4 -> st -> IO ()
+updateStore ck (SimpleCell (CellCore tlive tvarFStore) _ _pdir _rdir )  simpleSt st = do
+  atomically $ stmInsert simpleSt
+   where 
+     stmInsert st' = do 
+       liveMap <- readTVar tlive        
+       writeTVar tlive $ M.insert (getKey ck st) st' liveMap
 
 
--- storeTraverseWithKey :: forall t t1 t2 t3 t4 t5 t6 b.
---                          t6
---                          -> SimpleCell t t1 t2 t3 t4 t5
---                          -> (t6 -> DirectedKeyRaw t t1 t2 t3 -> SimpleStore t4 -> IO b)
---                          -> IO (Map (DirectedKeyRaw t t1 t2 t3) b)
--- storeTraverseWithKey ck (SimpleCell (CellCore tlive _) _ _ _) tvFcn  = do 
---   liveMap <- readTVarIO tlive 
---   M.traverseWithKey (\key cs -> do
---                         st <- getSimpleStore cs
---                         tvFcnWrp key st)  liveMap
---       where
---         tvFcnWrp k a = do
---           ( tvFcn ck k a)
+deleteStore  :: (Ord tm, Ord dst, Ord src, Ord k) =>
+     CellKey k src dst tm st
+     -> SimpleCell k src dst tm t (SimpleStore CellKeyStore)
+     -> st
+     -> IO ()
+deleteStore ck (SimpleCell (CellCore tlive tvarFStore) _ pdir rdir) st = do 
+  let targetStatePath = (codeCellKeyFilename ck).(getKey ck) $ st 
+  void $ atomically stmDelete
+  fStore <- readTVarIO tvarFStore
+  let fk = makeFileKey ck st  
+  void $ deleteSimpleCellPathFileKey fStore fk
+  createCheckpoint fStore
+  atomically $ writeTVar tvarFStore fStore
+  np <- (makeWorkingStatePath pdir rdir targetStatePath)
+  removeTree np
+     where
+        stmDelete = do 
+          liveMap <- readTVar tlive
+          writeTVar tlive $ M.delete (getKey ck st) liveMap
+
+storeFoldlWithKey ck (SimpleCell (CellCore tlive _) _ _ _) fldFcn seed = do 
+  liveMap <- readTVarIO tlive 
+  M.foldWithKey (\key simpleSt b -> do
+                             st <- getSimpleStore simpleSt
+                             fldFcn ck key st  b) seed liveMap
+
+
+storeTraverseWithKey ck (SimpleCell (CellCore tlive _) _ _ _) tvFcn  = do 
+  liveMap <- readTVarIO tlive 
+  M.traverseWithKey (\key cs -> do
+                        st <- getSimpleStore cs
+                        tvFcnWrp key st)  liveMap
+      where
+        tvFcnWrp k a = do
+          ( tvFcn ck k a)
           
-          
--- createCellCheckPointAndClose :: forall t t1 t2 t3 t4 st st1.
---                                 (Serialize st) =>
---                                 t -> SimpleCell t1 t2 t3 t4 st (SimpleStore st1) -> IO ()
--- createCellCheckPointAndClose _ (SimpleCell (CellCore tlive tvarFStore) _ _pdir _rdir ) = do 
---   liveMap <- readTVarIO tlive 
---   void $ traverse (\st -> (closeSimpleStore . getSimpleStore $ st)   ) liveMap
---   fStore <- readTVarIO tvarFStore
---   void $ createCheckpoint fStore >> closeSimpleStore fStore
 
--- initializeSimpleCell :: (Ord k, Ord src, Ord dst, Ord tm, Serialize stlive) =>
---                             CellKey k src dst tm stlive
---                             -> stlive
---                             -> Text -> IO (SimpleCell k src dst tm stlive (SimpleStore CellKeyStore))
--- initializeSimpleCell ck emptyTargetState root = do 
---  parentWorkingDir <- getWorkingDirectory
---  let acidRootPath = fromText root
---      newWorkingDir = acidRootPath
---      fpr           = (parentWorkingDir </> acidRootPath)
+createCellCheckPointAndClose  :: Serialize st1 =>  SimpleCell t1 t2 t3 t4 (SimpleStore st) (SimpleStore st1)
+     -> IO ()
+createCellCheckPointAndClose (SimpleCell (CellCore tlive tvarFStore) _ _pdir _rdir ) = do 
+  liveMap <- readTVarIO tlive 
+  void $ traverse (\st -> (fmap closeSimpleStore . getSimpleStore $ st)   ) liveMap
+  fStore <- readTVarIO tvarFStore
+  void $ createCheckpoint fStore >> closeSimpleStore fStore
 
---  fAcidSt <- (openSimpleStore (encodeString fpr )) >>= (either (\_ -> fail "file store not open") (return) )
 
---  fkSet   <-  getCellKeyStore <$>  getSimpleStore fAcidSt 
+initializeSimpleCell ck emptyTargetState root = do 
+ parentWorkingDir <- getWorkingDirectory
+ let simpleRootPath = fromText root
+     newWorkingDir = simpleRootPath
+     fpr           = (parentWorkingDir </> simpleRootPath)
 
---  let setEitherFileKeyRaw = S.map (unmakeFileKey ck) fkSet  
---  let groupedList = groupUp 16 (rights . S.toList $ setEitherFileKeyRaw)
---  aStateList <- traverse (traverseAndWait fpr) groupedList
---  stateList <- Data.Traversable.sequence $ (fmap $ rights . rights $ (Data.Foldable.concat aStateList))
---  let stateMap = M.fromList stateList
---  tmap <- newTVarIO stateMap
---  tvarFAcid <- newTVarIO fAcidSt
---  return $ SimpleCell (CellCore tmap tvarFAcid) ck parentWorkingDir newWorkingDir
---     where
---       traverseAndWait f l = do
---         aRes <- traverse (traverseLFcn f) l
---         traverse waitCatch aRes
---       traverseLFcn  r fkRaw = (async $ traverseLFcn' r fkRaw)
---       traverseLFcn' r fkRaw = do 
---         let fpKey = r </> (fromText . (codeCellKeyFilename ck) $ fkRaw) 
---         est' <- openCKSt fpKey emptyTargetState
---         print $ "opened: " ++ (show fpKey)    
---         return $ fmap (\st' -> (fkRaw, st')) est'       
+ fAcidSt <- (openSimpleStore ( fpr )) >>= (either (\_ -> fail "file store not open") (return) ) ::  IO (SimpleStore CellKeyStore)
+ fkSet   <-  getCellKeyStore <$>  getSimpleStore fAcidSt :: IO (S.Set FileKey)
+
+ let setEitherFileKeyRaw = S.map (unmakeFileKey ck) fkSet  
+ let groupedList = groupUp 16 (rights . S.toList $ setEitherFileKeyRaw)  
+ aStateList <- (traverse (traverseAndWait fpr) groupedList) 
+ let stateList =  rights.rights $ (Data.Foldable.concat aStateList)
+ let stateMap = M.fromList stateList
+
+ tmap <- newTVarIO stateMap
+ tvarFAcid <- newTVarIO fAcidSt
+ return $ SimpleCell (CellCore tmap tvarFAcid) ck parentWorkingDir newWorkingDir
+  where
+      traverseAndWait fp l = do
+        aRes <- traverse (traverseLFcn fp) l
+        traverse waitCatch aRes
+      traverseLFcn  fp fkRaw = (async $ traverseLFcn' fp fkRaw)
+      traverseLFcn' fp fkRaw = do 
+        let fpKey = fp </> (fromText . (codeCellKeyFilename ck) $ fkRaw) 
+        est' <- openCKSt fpKey emptyTargetState
+        print $ "opened: " ++ (show fpKey)    
+        return $ fmap (\st' -> (fkRaw, st')) est'       
 
 
 
--- openCKSt :: Serialize st =>
---              FilePath -> st -> IO (Either StoreError (SimpleStore st))
--- openCKSt fpKey emptyTargetState = openSimpleStore (fpKey)
+openCKSt :: Serialize st =>
+             FilePath -> st -> IO (Either StoreError (SimpleStore st))
+openCKSt fpKey emptyTargetState = openSimpleStore (fpKey)
   
 -- -- | Exception and Error handling
 -- -- type AEither a = Either StoreCellErrora
+
+

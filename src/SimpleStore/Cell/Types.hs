@@ -55,6 +55,10 @@ import qualified Data.Set as S
 
 import SimpleStore
 
+import Data.Aeson
+import Data.Aeson.Serialize 
+import Data.Serialize
+
 
 -- | 'CellKey' declares two functions, 
 -- 'getKey' which is supposed to take a SimpleStore Value and return a 'DirectedKeyRaw' 
@@ -78,6 +82,12 @@ data CellKey k src dst tm st = CellKey { getKey :: st -> (DirectedKeyRaw k src d
 
 newtype FileKey = FileKey { getFileKey :: Text} deriving (Show,Generic,Ord,Eq)
 
+instance ToJSON FileKey where
+instance FromJSON FileKey where
+
+instance Serialize FileKey where 
+  get = getFromJSON
+  put = putToJSON
 
 -- |'CellCoreLive' and 'CellCoreDormant' both define maps to acid states
 -- Live means currently loaded into memory
@@ -93,7 +103,14 @@ data CellCore  k src dst tm tvlive stdormant = CellCore {
 newtype CellKeyStore  = CellKeyStore { getCellKeyStore :: (S.Set FileKey)}
     deriving (Show,Generic)
 
+instance ToJSON CellKeyStore where
+instance FromJSON CellKeyStore where   
 
+instance Serialize CellKeyStore where
+  get = getFromJSON
+  put = putToJSON
+
+  
 
 -- | Transactional Cell Core
 --  Transactional Cell Core is where both the map to live acidstates are stored and the map for 

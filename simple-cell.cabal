@@ -16,7 +16,8 @@ Library
   Exposed-Modules:      SimpleStore.Cell                        
   Other-Modules:        SimpleStore.Cell.Internal
                         SimpleStore.Cell.Types
-                        SimpleStore.Cell.DIG                                        
+                        SimpleStore.Cell.DIG  
+                        SimpleStore.Cell.TH.StoreMakers                                      
   Build-Depends:        base >= 4 && < 5
                       , simple-store
                       , text >= 1.1.0.1 
@@ -30,6 +31,8 @@ Library
                       , bytestring >= 0.10.0.2
                       , directed-keys >= 0.2.1
                       , async >= 2
+                      , aeson
+                      , aeson-serialize
                       , template-haskell
                       , plow-extras-list
 
@@ -41,6 +44,8 @@ Test-Suite spec
   Ghc-Options:          -Wall
   Main-Is:              Spec.hs
   Build-Depends:        base
+                      , aeson
+                      , aeson-serialize
                       , hspec
                       , mtl
                       , simple-store
