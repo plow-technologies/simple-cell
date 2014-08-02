@@ -33,12 +33,12 @@ import           Filesystem.Path.CurrentOS hiding (root)
 import           Filesystem
 
 -- -- Controls
-import           Prelude (show, (++) ,($), (.),Ord, (==) , print, undefined)
+import           Prelude (show, (++) ,($), (.),Ord, (==) , print)
 import           Data.Either
 import           System.IO (IO)
 import           Control.Monad
 import           Control.Applicative
-import           Control.Exception
+-- import           Control.Exception
 -- import CorePrelude hiding (try,catch, finally)
 import           Control.Concurrent.STM
 -- import Control.Monad.Reader ( ask )
@@ -74,8 +74,8 @@ import           SimpleStore
 
 
 
-emptyCellKeyStore :: CellKeyStore
-emptyCellKeyStore = CellKeyStore S.empty
+-- emptyCellKeyStore :: CellKeyStore
+-- emptyCellKeyStore = CellKeyStore S.empty
 
   
 makeFileKey :: CellKey k src dst tm st -> st -> FileKey 
@@ -115,8 +115,8 @@ insertSimpleCellPathFileKey st fk =  do
   return st
 
 
-getSimpleCellPathFileKey :: SimpleStore CellKeyStore -> IO (CellKeyStore )
-getSimpleCellPathFileKey st = getSimpleStore st
+-- getSimpleCellPathFileKey :: SimpleStore CellKeyStore -> IO (CellKeyStore )
+-- getSimpleCellPathFileKey st = getSimpleStore st
   
  
 
@@ -155,7 +155,7 @@ updateStore
   :: (Ord t3, Ord t2, Ord t1, Ord t) =>
      CellKey t t1 t2 t3 st
      -> SimpleCell t t1 t2 t3 t4 t5 -> SimpleStore t4 -> st -> IO ()
-updateStore ck (SimpleCell (CellCore tlive tvarFStore) _ _pdir _rdir )  simpleSt st = do
+updateStore ck (SimpleCell (CellCore tlive _tvarFStore) _ _pdir _rdir )  simpleSt st = do
   atomically $ stmInsert simpleSt
    where 
      stmInsert st' = do 
@@ -174,7 +174,7 @@ deleteStore ck (SimpleCell (CellCore tlive tvarFStore) _ pdir rdir) st = do
   fStore <- readTVarIO tvarFStore
   let fk = makeFileKey ck st  
   void $ deleteSimpleCellPathFileKey fStore fk
-  createCheckpoint fStore
+  void $ createCheckpoint fStore
   atomically $ writeTVar tvarFStore fStore
   np <- (makeWorkingStatePath pdir rdir targetStatePath)
   removeTree np
@@ -242,7 +242,7 @@ initializeSimpleCell ck emptyTargetState root = do
 
 openCKSt :: Serialize st =>
              FilePath -> st -> IO (Either StoreError (SimpleStore st))
-openCKSt fpKey emptyTargetState = openSimpleStore (fpKey)
+openCKSt fpKey _emptyTargetState = openSimpleStore (fpKey)
   
 -- -- | Exception and Error handling
 -- -- type AEither a = Either StoreCellErrora

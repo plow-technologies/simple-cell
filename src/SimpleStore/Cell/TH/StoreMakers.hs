@@ -6,7 +6,7 @@
 
 |-}
 module SimpleStore.Cell.TH.StoreMakers ( 
---                                      allStoreMakers
+                                      allStoreMakers
                             ) where
 
 
@@ -15,7 +15,7 @@ import Language.Haskell.TH
 
 
 import SimpleStore.Cell.DIG
-import SimpleStore.Cell.Types
+
 
 
 type CellKeyName = Name 

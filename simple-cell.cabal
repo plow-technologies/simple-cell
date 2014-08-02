@@ -17,6 +17,7 @@ Library
   Other-Modules:        SimpleStore.Cell.Internal
                         SimpleStore.Cell.Types
                         SimpleStore.Cell.DIG  
+                        SimpleStore.Cell.TH
                         SimpleStore.Cell.TH.StoreMakers                                      
   Build-Depends:        base >= 4 && < 5
                       , simple-store
