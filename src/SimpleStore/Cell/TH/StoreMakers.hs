@@ -13,10 +13,7 @@ module SimpleStore.Cell.TH.StoreMakers (
 
 import Language.Haskell.TH
 
-
 import SimpleStore.Cell.DIG
-
-
 
 type CellKeyName = Name 
 type InitializerName = Name 
@@ -44,22 +41,22 @@ buildInitName :: StoreName -> Name
 buildInitName stN = mkName.concat $ ["initialize",(nameBase stN), "SC"]
 
 makeInsertXSimpleCell ::  CellKeyName -> InitializerName -> StoreName -> Q Dec
-makeInsertXSimpleCell ckN initN stN = do 
+makeInsertXSimpleCell ckN _initN stN = do 
   f <- (funD (buildInsertName stN)) [(clause [] (normalB insertSimpleCellTH) [] ) ] 
   return f 
   where 
-    insertSimpleCellTH = appE (appE (varE 'insertStore ) (varE ckN)) (varE initN)
+    insertSimpleCellTH =appE (varE 'insertStore ) (varE ckN) 
 
 buildInsertName :: StoreName -> Name
 buildInsertName stN = mkName.concat $ ["insert", (nameBase stN), "SC"]
 
 
 makeUpdateXSimpleCell ::  CellKeyName -> InitializerName -> StoreName -> Q Dec
-makeUpdateXSimpleCell ckN initN stN = do 
+makeUpdateXSimpleCell ckN _initN stN = do 
   f <- (funD (buildUpdateName stN)) [(clause [] (normalB updateSimpleCellTH) [] ) ] 
   return f 
   where 
-    updateSimpleCellTH = appE (appE (varE 'updateStore ) (varE ckN)) (varE initN)
+    updateSimpleCellTH = appE (varE 'updateStore ) (varE ckN) 
 
 buildUpdateName :: StoreName -> Name
 buildUpdateName stN = mkName.concat $ ["update", (nameBase stN), "SC"]
@@ -120,11 +117,11 @@ buildTraverseWithKeyName stN = mkName.concat $ ["traverseWithKey", (nameBase stN
 
 
 makeCreateCheckpointAndCloseXSimpleCell :: CellKeyName -> InitializerName -> StoreName -> Q Dec
-makeCreateCheckpointAndCloseXSimpleCell ckN _ stN = do 
+makeCreateCheckpointAndCloseXSimpleCell _ckN _ stN = do 
   f <- (funD (buildCheckPointAndCloseName stN)) [(clause [] (normalB createCheckpointAndCloseSimpleCellTH) [] ) ] 
   return f 
   where 
-    createCheckpointAndCloseSimpleCellTH = (appE (varE 'createCellCheckPointAndClose ) (varE ckN)) 
+    createCheckpointAndCloseSimpleCellTH = (varE 'createCellCheckPointAndClose )  
 
 buildCheckPointAndCloseName :: StoreName -> Name
 buildCheckPointAndCloseName stN = mkName.concat $ ["createCheckpointAndClose", (nameBase stN), "SC"]

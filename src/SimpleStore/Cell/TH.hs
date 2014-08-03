@@ -6,7 +6,7 @@
 |-} 
 
 module SimpleStore.Cell.TH ( 
-                          makeAcidCell
+                          makeStoreCell
 
                             ) where
 --Meta 
@@ -22,7 +22,7 @@ import SimpleStore.Cell.TH.StoreMakers
 
 -- | use this function to make your acid Cell 
 -- > $(makeAcidCell 'yourCellKey 'emptyState 'SomeTarget)
-makeAcidCell :: Name -> Name -> Name ->  Q [Dec]
-makeAcidCell ckN initN stN = do 
+makeStoreCell :: Name -> Name -> Name ->  Q [Dec]
+makeStoreCell ckN initN stN = do 
   Data.Traversable.sequence $ allStoreMakers <*> [ckN] <*> [initN] <*> [stN]
 
