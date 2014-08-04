@@ -27,7 +27,8 @@ allStoreMakers = [ makeInitializeXSimpleCell
                  , makeFoldlWithKeyXSimpleCell
                  , makeTraverseWithKeyXSimpleCell
                  , makeCreateCheckpointAndCloseXSimpleCell 
-                 , makeUpdateXSimpleCell                   
+                 , makeUpdateXSimpleCell
+                 , makeGetXSimpleCell
                  ]
 -- -- The X represents the position of the incoming type in the filename 
 makeInitializeXSimpleCell ::  CellKeyName -> InitializerName -> StoreName -> Q Dec
@@ -74,15 +75,16 @@ buildDeleteName stN = mkName.concat $ ["delete", (nameBase stN), "SC"]
   
 
 
--- makeGetXSimpleCell :: CellKeyName -> InitializerName -> StoreName -> Q Dec
--- makeGetXSimpleCell ckN _ stN = do 
---  f <- (funD (buildGetName stN)) [(clause [] (normalB getSimpleCellTH) [] ) ] 
---  return f 
---  where 
---    getSimpleCellTH = (appE (varE 'getStore ) (varE ckN)) 
+makeGetXSimpleCell :: CellKeyName -> InitializerName -> StoreName -> Q Dec
+makeGetXSimpleCell ckN _ stN = do 
+ f <- (funD (buildGetName stN)) [(clause [] (normalB getSimpleCellTH) [] ) ] 
+ return f 
+ where 
+   getSimpleCellTH = (appE (varE 'getStore ) (varE ckN)) 
 
--- buildGetName :: StoreName -> Name
--- buildGetName stN = mkName.concat $ ["get", (nameBase stN), "SC"]
+                            
+buildGetName :: StoreName -> Name
+buildGetName stN = mkName.concat $ ["get", (nameBase stN), "SC"]
   
 
 

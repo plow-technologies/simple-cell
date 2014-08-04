@@ -89,6 +89,7 @@ instance Serialize FileKey where
   get = getFromJSON
   put = putToJSON
 
+
 -- |'CellCoreLive' and 'CellCoreDormant' both define maps to acid states
 -- Live means currently loaded into memory
 -- Dormant means currently not loaded

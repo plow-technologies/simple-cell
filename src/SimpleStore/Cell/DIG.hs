@@ -17,6 +17,7 @@
 module SimpleStore.Cell.DIG (
   initializeSimpleCell
   , insertStore
+  , getStore
   , updateStore
   , deleteStore
   , storeFoldlWithKey
@@ -38,7 +39,7 @@ import           Data.Either
 import           System.IO (IO)
 import           Control.Monad
 import           Control.Applicative
--- import           Control.Exception
+import           Control.Exception
 -- import CorePrelude hiding (try,catch, finally)
 import           Control.Concurrent.STM
 -- import Control.Monad.Reader ( ask )
@@ -47,9 +48,10 @@ import           Control.Concurrent.STM
 import           Control.Concurrent.Async
 
 
--- Typeclasses
+-- Typeclassesate
 
 import           Data.Foldable
+import           Data.Maybe
 import           Data.Traversable
 -- import GHC.Generics
 import           Data.Serialize
@@ -115,12 +117,12 @@ insertSimpleCellPathFileKey st fk =  do
   return st
 
 
--- getSimpleCellPathFileKey :: SimpleStore CellKeyStore -> IO (CellKeyStore )
--- getSimpleCellPathFileKey st = getSimpleStore st
+getSimpleCellPathFileKey :: SimpleStore CellKeyStore -> IO (CellKeyStore )
+getSimpleCellPathFileKey st = getSimpleStore st
   
  
 
--- | User Interface Defining Functions
+-- | User Interface Defining Function
 
 -- | The 'st' in the type definition here is the AcidState that will be turned into a watched state
 
@@ -148,6 +150,16 @@ insertStore ck (SimpleCell (CellCore tlive tvarFStore) _ pdir rdir)  st = do
        stmInsert st' = do 
          liveMap <- readTVar tlive        
          writeTVar tlive $ M.insert (getKey ck st) st' liveMap
+
+getStore :: (Ord k, Ord src, Ord dst, Ord tm,Serialize st) =>
+                     CellKey k src dst tm st
+                     -> SimpleCell k src dst tm st (SimpleStore CellKeyStore)
+                     -> st
+                     -> IO (Maybe (SimpleStore st))
+getStore ck sc st = readTVarIO cMap >>= return.(M.lookup dkr )
+  where
+    dkr = getKey ck st
+    cMap = ccLive.cellCore $ sc
 
 
 
@@ -183,6 +195,9 @@ deleteStore ck (SimpleCell (CellCore tlive tvarFStore) _ pdir rdir) st = do
           liveMap <- readTVar tlive
           writeTVar tlive $ M.delete (getKey ck st) liveMap
 
+storeFoldlWithKey :: t6  -> SimpleCell t t1 t2 t3 t5 t4 -> (t6 -> DirectedKeyRaw t t1 t2 t3 -> t5 -> IO b -> IO b)
+                     -> IO b
+                     -> IO b
 storeFoldlWithKey ck (SimpleCell (CellCore tlive _) _ _ _) fldFcn seed = do 
   liveMap <- readTVarIO tlive 
   M.foldWithKey (\key simpleSt b -> do
@@ -190,6 +205,9 @@ storeFoldlWithKey ck (SimpleCell (CellCore tlive _) _ _ _) fldFcn seed = do
                              fldFcn ck key st  b) seed liveMap
 
 
+storeTraverseWithKey :: t5 -> SimpleCell t t1 t2 t3 t6 t4
+     -> (t5 -> DirectedKeyRaw t t1 t2 t3 -> t6 -> IO b)
+     -> IO (M.Map (DirectedKeyRaw t t1 t2 t3) b)
 storeTraverseWithKey ck (SimpleCell (CellCore tlive _) _ _ _) tvFcn  = do 
   liveMap <- readTVarIO tlive 
   M.traverseWithKey (\key cs -> do
@@ -209,6 +227,18 @@ createCellCheckPointAndClose (SimpleCell (CellCore tlive tvarFStore) _ _pdir _rd
   void $ createCheckpoint fStore >> closeSimpleStore fStore
 
 
+initializeSimpleCell :: (Data.Serialize.Serialize stlive, Ord tm, Ord dst, Ord src, Ord k) =>
+     CellKey k src dst tm stlive
+     -> stlive
+     -> Text
+     -> IO
+          (SimpleCell
+             k
+             src
+             dst
+             tm
+             stlive
+             (SimpleStore CellKeyStore))
 initializeSimpleCell ck emptyTargetState root = do 
  parentWorkingDir <- getWorkingDirectory
  let simpleRootPath = fromText root
