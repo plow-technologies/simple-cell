@@ -218,11 +218,10 @@ storeTraverseWithKey ck (SimpleCell (CellCore tlive _) _ _ _) tvFcn  = do
           ( tvFcn ck k a)
           
 
-createCellCheckPointAndClose  :: Serialize st1 =>  SimpleCell t1 t2 t3 t4 (SimpleStore st) (SimpleStore st1)
-     -> IO ()
+createCellCheckPointAndClose ::   SimpleCell t t1 t2 t3 st (SimpleStore CellKeyStore) -> IO ()
 createCellCheckPointAndClose (SimpleCell (CellCore tlive tvarFStore) _ _pdir _rdir ) = do 
   liveMap <- readTVarIO tlive 
-  void $ traverse (\st -> (fmap closeSimpleStore . getSimpleStore $ st)   ) liveMap
+  void $ traverse (\st -> (closeSimpleStore st)   ) liveMap
   fStore <- readTVarIO tvarFStore
   void $ createCheckpoint fStore >> closeSimpleStore fStore
 
