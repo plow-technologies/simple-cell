@@ -76,8 +76,8 @@ import           SimpleStore
 
 
 
--- emptyCellKeyStore :: CellKeyStore
--- emptyCellKeyStore = CellKeyStore S.empty
+emptyCellKeyStore :: CellKeyStore
+emptyCellKeyStore = CellKeyStore S.empty
 
   
 makeFileKey :: CellKey k src dst tm st -> st -> FileKey 
@@ -244,7 +244,10 @@ initializeSimpleCell ck emptyTargetState root = do
      newWorkingDir = simpleRootPath
      fpr           = (parentWorkingDir </> simpleRootPath)
 
- fAcidSt <- (openSimpleStore ( fpr )) >>= (either (\_ -> fail "file store not open") (return) ) ::  IO (SimpleStore CellKeyStore)
+ fAcidSt <- (openSimpleStore ( fpr )) >>= (either (\_ -> do
+                                                      eCellKeyStore <- (makeSimpleStore fpr emptyCellKeyStore )
+                                                      either (\_ -> fail "cellKey won't initialize" ) (return ) eCellKeyStore
+                                                  ) (return) ) ::  IO (SimpleStore CellKeyStore)
  fkSet   <-  getCellKeyStore <$>  getSimpleStore fAcidSt :: IO (S.Set FileKey)
 
  let setEitherFileKeyRaw = S.map (unmakeFileKey ck) fkSet  
