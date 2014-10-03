@@ -39,7 +39,7 @@ import           Data.Either
 import           System.IO (IO)
 import           Control.Monad
 import           Control.Applicative
-import           Control.Exception
+
 -- import CorePrelude hiding (try,catch, finally)
 import           Control.Concurrent.STM
 -- import Control.Monad.Reader ( ask )

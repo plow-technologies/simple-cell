@@ -49,12 +49,14 @@ Test-Suite spec
                       , aeson-serialize
                       , hspec
                       , mtl
+                      , async
                       , simple-store
                       , template-haskell
                       , cereal 
                       , lens
                       , text >= 1.1.0.1
                       , hspec
+                      , QuickCheck >= 2.7.6 && < 2.8.0
                       , containers
                       , bytestring
                       , basic-prelude
@@ -62,6 +64,7 @@ Test-Suite spec
                       , system-fileio 
                       , stm
                       , system-filepath
+                      , plow-extras-list
 
 Source-Repository head
   Type:                 git
