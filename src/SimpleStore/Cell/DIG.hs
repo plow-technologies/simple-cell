@@ -20,7 +20,7 @@ module SimpleStore.Cell.DIG (
   , getStore
   , updateStore
   , deleteStore
-  , storeFoldlWithKey
+  , storeFoldrWithKey
   , storeTraverseWithKey
   , createCellCheckPointAndClose
   ) where
@@ -61,7 +61,7 @@ import           Data.Serialize
 -- import DirectedKeys.Types
 
 -- -- Containers 
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 
 import           Plow.Extras.List
@@ -195,12 +195,12 @@ deleteStore ck (SimpleCell (CellCore tlive tvarFStore) _ pdir rdir) st = do
           liveMap <- readTVar tlive
           writeTVar tlive $ M.delete (getKey ck st) liveMap
 
-storeFoldlWithKey :: t6  -> SimpleCell t t1 t2 t3 t5 t4 -> (t6 -> DirectedKeyRaw t t1 t2 t3 -> t5 -> IO b -> IO b)
+storeFoldrWithKey :: t6  -> SimpleCell t t1 t2 t3 t5 t4 -> (t6 -> DirectedKeyRaw t t1 t2 t3 -> t5 -> IO b -> IO b)
                      -> IO b
                      -> IO b
-storeFoldlWithKey ck (SimpleCell (CellCore tlive _) _ _ _) fldFcn seed = do 
+storeFoldrWithKey ck (SimpleCell (CellCore tlive _) _ _ _) fldFcn seed = do 
   liveMap <- readTVarIO tlive 
-  M.foldWithKey (\key simpleSt b -> do
+  M.foldrWithKey (\key simpleSt b -> do
                              st <- getSimpleStore simpleSt
                              fldFcn ck key st  b) seed liveMap
 
