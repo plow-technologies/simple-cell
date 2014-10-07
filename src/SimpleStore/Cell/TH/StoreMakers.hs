@@ -93,7 +93,7 @@ makeFoldlWithKeyXSimpleCell ckN _ stN = do
   f <- (funD (buildFoldlWithKeyName stN)) [(clause [] (normalB foldlWithKeySimpleCellTH) [] ) ] 
   return f 
   where 
-    foldlWithKeySimpleCellTH = (appE (varE 'storeFoldlWithKey ) (varE ckN)) 
+    foldlWithKeySimpleCellTH = (appE (varE 'storeFoldrWithKey ) (varE ckN)) 
 
 
 
