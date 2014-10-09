@@ -87,6 +87,7 @@ unmakeFileKey :: CellKey k src dst tm st
                         -> FileKey -> Either Text (DirectedKeyRaw k src dst tm)
 unmakeFileKey ck s = decodeCellKeyFilename ck . getFileKey $ s
 
+makeWorkingStatePath  :: (Functor m, Monad m) =>     FilePath -> FilePath -> Text -> m FilePath
 makeWorkingStatePath pdir rdir nsp = do 
     void $ when (nsp == "") (fail "--> Cell key led to empty state path")
     return $ pdir </> rdir </> fromText nsp
@@ -106,7 +107,7 @@ deleteSimpleCellPathFileKey :: SimpleStore CellKeyStore -> FileKey -> IO ()
 deleteSimpleCellPathFileKey st fk = do 
   (CellKeyStore { getCellKeyStore = hsSet}) <- getSimpleStore st
   putSimpleStore st (CellKeyStore (S.delete fk hsSet ))
-  
+  void $ createCheckpoint st
 
 
 -- |Note... This insert is repsert functional
@@ -114,6 +115,7 @@ insertSimpleCellPathFileKey :: SimpleStore CellKeyStore -> FileKey ->  IO (Simpl
 insertSimpleCellPathFileKey st fk =  do 
   (CellKeyStore { getCellKeyStore = hsSet}) <- getSimpleStore st
   putSimpleStore st  $ CellKeyStore (S.insert  fk hsSet )
+  void $ createCheckpoint st
   return st
 
 
