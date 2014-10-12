@@ -72,6 +72,7 @@ benchmark             simple-cell-bench
                       , src
                       , test
   Ghc-Options:          -threaded -Wall  -rtsopts
+-- -prof -auto-all -caf-all -osuf p_o -hisuf p_hi -rtsopts
   Main-Is:              Bench.hs
   Build-Depends:        base
                       , aeson
@@ -79,6 +80,7 @@ benchmark             simple-cell-bench
                       , criterion
                       , mtl
                       , async
+                      , random
                       , simple-store
                       , template-haskell
                       , cereal 
@@ -94,7 +96,7 @@ benchmark             simple-cell-bench
                       , plow-extras-list
 
 
--- -prof -auto-all -caf-all -osuf p_o -hisuf p_hi -rtsopts
+
 Source-Repository head
   Type:                 git
   Location:             https://github.com/plow-technologies/simple-cell.git
