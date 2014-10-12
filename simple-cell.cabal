@@ -42,7 +42,7 @@ Test-Suite spec
   Default-Language:     Haskell2010
   Hs-Source-Dirs:       src
                       , test
-  Ghc-Options:          -threaded -Wall  -prof -auto-all -caf-all -osuf p_o -hisuf p_hi -rtsopts
+  Ghc-Options:          -threaded -Wall  
   Main-Is:              Spec.hs
   Build-Depends:        base
                       , aeson
@@ -66,6 +66,8 @@ Test-Suite spec
                       , system-filepath
                       , plow-extras-list
 
+
+-- -prof -auto-all -caf-all -osuf p_o -hisuf p_hi -rtsopts
 Source-Repository head
   Type:                 git
   Location:             https://github.com/plow-technologies/simple-cell.git
