@@ -1,19 +1,23 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 import Control.Applicative ((<$>))
-import Control.Monad (void)
+import Control.Monad (void,forever)
 import qualified Data.Text as T
 import Data.Traversable (traverse)
 import SimpleStore
 import System.Random (getStdGen, randoms)
+import Control.Concurrent (threadDelay)
 import TestImport
+
 main :: IO ()
 main = do
   sc <- initializeSampleSC "benchTestCell"
   stdGen <- getStdGen 
-  let sis = Sample <$> randoms stdGen
+  let sis = take 500 $ Sample <$> randoms stdGen
   void $ traverse (insertSampleSC sc) sis
-  
+  forever $ do
+    void $ traverse (storeState sc) sis
+    threadDelay $ 60*1000*1000
 
 
 

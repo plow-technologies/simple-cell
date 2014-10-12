@@ -1,0 +1,27 @@
+{-# LANGUAGE OverloadedStrings, DeriveGeneric #-}
+
+module TestImport where
+
+import Data.Aeson
+import GHC.Generics
+import DirectedKeys.Types
+
+
+data SampleCell = SampleCell { 
+           sampleInt :: Int 
+           } 
+    deriving (Show,Eq,Generic)
+
+
+
+
+
+newtype SampleCellDst = SampleCellDst { unSampleCellDst :: Int }
+newtype SampleCellSrc = SampleCellSrc { unSampleCellSrc :: Int }
+newtype SampleCellKey = SampleCellKey { unSampleCellKey :: Int } 
+
+instance ToJSON SampleCell where 
+instance FromJSON SampleCell where 
+
+
+

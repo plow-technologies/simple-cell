@@ -1,0 +1,291 @@
+
+./bench/Bench.hs,63
+main main11,12
+main main12,13
+storeState storeState23,24
+
+./test/SimpleStore/CellSpec.hs,204
+module SimpleStore.CellSpec SimpleStore.CellSpec1,2
+main main11,12
+main main12,13
+spec spec14,15
+spec spec15,16
+propInitThenRead propInitThenRead22,23
+propInitThenRead propInitThenRead23,24
+
+./test/TestImport.hs,1843
+module TestImport TestImport3,4
+data Sample Sample32,33
+data Sample = Sample Sample32,33
+           sampleInt sampleInt33,34
+newtype SampleDst SampleDst41,42
+newtype SampleDst = SampleDst SampleDst41,42
+newtype SampleDst = SampleDst { unSampleDst unSampleDst41,42
+newtype SampleSrc SampleSrc48,49
+newtype SampleSrc = SampleSrc SampleSrc48,49
+newtype SampleSrc = SampleSrc { unSampleSrc unSampleSrc48,49
+newtype SampleKey SampleKey55,56
+newtype SampleKey = SampleKey SampleKey55,56
+newtype SampleKey = SampleKey { unSampleKey unSampleKey55,56
+newtype SampleTime SampleTime61,62
+newtype SampleTime = SampleTime SampleTime61,62
+newtype SampleTime = SampleTime { unSampleTime unSampleTime61,62
+sampleSrc sampleSrc71,72
+sampleSrc sampleSrc72,73
+sampleDst sampleDst74,75
+sampleDst sampleDst75,76
+sampleTime sampleTime77,78
+sampleTime sampleTime78,79
+instance instance85,86
+initSample initSample89,90
+initSample initSample90,91
+sampleStoreCellKey sampleStoreCellKey92,93
+sampleStoreCellKey sampleStoreCellKey93,94
+type DirectedSampleKey DirectedSampleKey100,101
+type SampleCell SampleCell101,102
+type SampleCK SampleCK109,110
+fullEncodeFcn fullEncodeFcn111,112
+fullEncodeFcn fullEncodeFcn112,113
+fullDecodeFcn fullDecodeFcn114,115
+fullDecodeFcn fullDecodeFcn118,119
+getKeyFcn getKeyFcn122,123
+getKeyFcn getKeyFcn123,124
+getSampleSC getSampleSC134,135
+updateSampleSC updateSampleSC137,138
+createCheckpointAndCloseSampleSC createCheckpointAndCloseSampleSC141,142
+traverseWithKeySampleSC traverseWithKeySampleSC147,148
+foldlWithKeySampleSC foldlWithKeySampleSC153,154
+deleteSampleSC deleteSampleSC158,159
+insertSampleSC insertSampleSC167,168
+initializeSampleSC initializeSampleSC170,171
+runRestartTest runRestartTest176,177
+runRestartTest runRestartTest177,178
+
+./test/Spec.hs,0
+
+./.cabal-sandbox/share/x86_64-linux-ghc-7.8.3/HUnit-1.2.5.2/examples/Example.hs,318
+module Main Main5,6
+foo foo10,11
+foo foo11,12
+partA partA13,14
+partA partA14,15
+partB partB16,17
+partB partB17,18
+test1 test119,20
+test1 test120,21
+test2 test222,23
+test2 test223,24
+tests tests28,29
+tests tests29,30
+tests' tests'31,32
+tests' tests'32,33
+main main37,38
+main main38,39
+
+./src/SimpleStore/Cell.hs,46
+module SimpleStore.Cell SimpleStore.Cell0,1
+
+./src/SimpleStore/Cell/TH/StoreMakers.hs,1945
+module SimpleStore.Cell.TH.StoreMakers SimpleStore.Cell.TH.StoreMakers7,8
+type CellKeyName CellKeyName17,18
+type InitializerName InitializerName18,19
+type StoreName StoreName19,20
+allStoreMakers allStoreMakers22,23
+allStoreMakers allStoreMakers23,24
+makeInitializeXSimpleCell makeInitializeXSimpleCell33,34
+makeInitializeXSimpleCell makeInitializeXSimpleCell34,35
+buildInitName buildInitName40,41
+buildInitName buildInitName41,42
+makeInsertXSimpleCell makeInsertXSimpleCell43,44
+makeInsertXSimpleCell makeInsertXSimpleCell44,45
+buildInsertName buildInsertName50,51
+buildInsertName buildInsertName51,52
+makeUpdateXSimpleCell makeUpdateXSimpleCell54,55
+makeUpdateXSimpleCell makeUpdateXSimpleCell55,56
+buildUpdateName buildUpdateName61,62
+buildUpdateName buildUpdateName62,63
+makeDeleteXSimpleCell makeDeleteXSimpleCell65,66
+makeDeleteXSimpleCell makeDeleteXSimpleCell66,67
+buildDeleteName buildDeleteName72,73
+buildDeleteName buildDeleteName73,74
+makeGetXSimpleCell makeGetXSimpleCell77,78
+makeGetXSimpleCell makeGetXSimpleCell78,79
+buildGetName buildGetName85,86
+buildGetName buildGetName86,87
+makeFoldlWithKeyXSimpleCell makeFoldlWithKeyXSimpleCell90,91
+makeFoldlWithKeyXSimpleCell makeFoldlWithKeyXSimpleCell91,92
+buildFoldlWithKeyName buildFoldlWithKeyName99,100
+buildFoldlWithKeyName buildFoldlWithKeyName100,101
+makeTraverseWithKeyXSimpleCell makeTraverseWithKeyXSimpleCell104,105
+makeTraverseWithKeyXSimpleCell makeTraverseWithKeyXSimpleCell105,106
+buildTraverseWithKeyName buildTraverseWithKeyName113,114
+buildTraverseWithKeyName buildTraverseWithKeyName114,115
+makeCreateCheckpointAndCloseXSimpleCell makeCreateCheckpointAndCloseXSimpleCell120,121
+makeCreateCheckpointAndCloseXSimpleCell makeCreateCheckpointAndCloseXSimpleCell121,122
+buildCheckPointAndCloseName buildCheckPointAndCloseName127,128
+buildCheckPointAndCloseName buildCheckPointAndCloseName128,129
+
+./src/SimpleStore/Cell/DIG.hs,1354
+module SimpleStore.Cell.DIG SimpleStore.Cell.DIG16,17
+import import36,37
+emptyCellKeyStore emptyCellKeyStore78,79
+emptyCellKeyStore emptyCellKeyStore79,80
+makeFileKey makeFileKey82,83
+makeFileKey makeFileKey83,84
+unmakeFileKey unmakeFileKey85,86
+unmakeFileKey unmakeFileKey87,88
+makeWorkingStatePath makeWorkingStatePath89,90
+makeWorkingStatePath makeWorkingStatePath90,91
+deleteSimpleCellPathFileKey deleteSimpleCellPathFileKey105,106
+deleteSimpleCellPathFileKey deleteSimpleCellPathFileKey106,107
+insertSimpleCellPathFileKey insertSimpleCellPathFileKey113,114
+insertSimpleCellPathFileKey insertSimpleCellPathFileKey114,115
+insertStore insertStore132,133
+insertStore insertStore137,138
+getStore getStore155,156
+getStore getStore160,161
+updateStore updateStore171,172
+deleteStore deleteStore178,179
+deleteStore deleteStore184,185
+storeFoldrWithKey storeFoldrWithKey199,200
+storeFoldrWithKey storeFoldrWithKey202,203
+storeTraverseWithKey storeTraverseWithKey209,210
+storeTraverseWithKey storeTraverseWithKey212,213
+createCellCheckPointAndClose createCellCheckPointAndClose221,222
+createCellCheckPointAndClose createCellCheckPointAndClose222,223
+initializeSimpleCell initializeSimpleCell229,230
+initializeSimpleCell initializeSimpleCell241,242
+openCKSt openCKSt274,275
+openCKSt openCKSt276,277
+
+./src/SimpleStore/Cell/Internal.hs,63
+module SimpleStore.Cell.InternalSimpleStore.Cell.Internal0,1
+
+./src/SimpleStore/Cell/TH.hs,122
+module SimpleStore.Cell.TH SimpleStore.Cell.TH7,8
+makeStoreCell makeStoreCell24,25
+makeStoreCell makeStoreCell25,26
+
+./src/SimpleStore/Cell/Types.hs,1406
+module SimpleStore.Cell.Types SimpleStore.Cell.Types14,15
+data CellKey CellKey74,75
+data CellKey k src dst tm st = CellKey CellKey74,75
+data CellKey k src dst tm st = CellKey { getKey getKey74,75
+                                  , codeCellKeyFilename codeCellKeyFilename75,76
+                                  , decodeCellKeyFilename decodeCellKeyFilename76,77
+newtype FileKey FileKey82,83
+newtype FileKey = FileKey FileKey82,83
+newtype FileKey = FileKey { getFileKey getFileKey82,83
+instance instance87,88
+data CellCore CellCore96,97
+data CellCore  k src dst tm tvlive stdormant = CellCore CellCore96,97
+      ccLive ccLive97,98
+      ,ccDormant ccDormant98,99
+newtype CellKeyStore CellKeyStore103,104
+newtype CellKeyStore  = CellKeyStore CellKeyStore103,104
+newtype CellKeyStore  = CellKeyStore { getCellKeyStore getCellKeyStore103,104
+type TCellCore TCellCore119,120
+type TCellCore  k k119,120
+data SimpleCell SimpleCell122,123
+data SimpleCell  k src dst tm stlive stdormant = SimpleCell SimpleCell122,123
+      cellCore cellCore123,124
+    , cellKey cellKey124,125
+    , cellParentFP cellParentFP125,126
+    , cellRootFP cellRootFP126,127
+data StoreCellError StoreCellError131,132
+data StoreCellError  = InsertFail InsertFail131,132
+                     | DeleteFail DeleteFail132,133
+                     | StateNotFound StateNotFound133,134
+
+./dist/build/autogen/Paths_simple_cell.hs,972
+module Paths_simple_cell Paths_simple_cell0,1
+catchIO catchIO11,12
+catchIO catchIO12,13
+version version15,16
+version version16,17
+bindir, libdir, datadir, libexecdir, sysconfdir sysconfdir17,18
+bindir, libdir, datadir, libexecdir,libexecdir17,18
+bindir, libdir, datadir,datadir17,18
+bindir, libdir,libdir17,18
+bindir,bindir17,18
+bindir bindir19,20
+libdir libdir20,21
+datadir datadir21,22
+libexecdir libexecdir22,23
+sysconfdir sysconfdir23,24
+getBinDir, getLibDir, getDataDir, getLibexecDir, getSysconfDir getSysconfDir25,26
+getBinDir, getLibDir, getDataDir, getLibexecDir,getLibexecDir25,26
+getBinDir, getLibDir, getDataDir,getDataDir25,26
+getBinDir, getLibDir,getLibDir25,26
+getBinDir,getBinDir25,26
+getBinDir getBinDir26,27
+getLibDir getLibDir27,28
+getDataDir getDataDir28,29
+getLibexecDir getLibexecDir29,30
+getSysconfDir getSysconfDir30,31
+getDataFileName getDataFileName32,33
+getDataFileName getDataFileName33,34
+
+./dist/dist-sandbox-4e06fe5f/build/autogen/Paths_simple_cell.hs,972
+module Paths_simple_cell Paths_simple_cell0,1
+catchIO catchIO11,12
+catchIO catchIO12,13
+version version15,16
+version version16,17
+bindir, libdir, datadir, libexecdir, sysconfdir sysconfdir17,18
+bindir, libdir, datadir, libexecdir,libexecdir17,18
+bindir, libdir, datadir,datadir17,18
+bindir, libdir,libdir17,18
+bindir,bindir17,18
+bindir bindir19,20
+libdir libdir20,21
+datadir datadir21,22
+libexecdir libexecdir22,23
+sysconfdir sysconfdir23,24
+getBinDir, getLibDir, getDataDir, getLibexecDir, getSysconfDir getSysconfDir25,26
+getBinDir, getLibDir, getDataDir, getLibexecDir,getLibexecDir25,26
+getBinDir, getLibDir, getDataDir,getDataDir25,26
+getBinDir, getLibDir,getLibDir25,26
+getBinDir,getBinDir25,26
+getBinDir getBinDir26,27
+getLibDir getLibDir27,28
+getDataDir getDataDir28,29
+getLibexecDir getLibexecDir29,30
+getSysconfDir getSysconfDir30,31
+getDataFileName getDataFileName32,33
+getDataFileName getDataFileName33,34
+
+./dist/dist-sandbox-4e06fe5f/setup/setup.hs,19
+import import0,1
+
+./dist/dist-sandbox-302f3dd8/build/autogen/Paths_simple_cell.hs,972
+module Paths_simple_cell Paths_simple_cell0,1
+catchIO catchIO11,12
+catchIO catchIO12,13
+version version15,16
+version version16,17
+bindir, libdir, datadir, libexecdir, sysconfdir sysconfdir17,18
+bindir, libdir, datadir, libexecdir,libexecdir17,18
+bindir, libdir, datadir,datadir17,18
+bindir, libdir,libdir17,18
+bindir,bindir17,18
+bindir bindir19,20
+libdir libdir20,21
+datadir datadir21,22
+libexecdir libexecdir22,23
+sysconfdir sysconfdir23,24
+getBinDir, getLibDir, getDataDir, getLibexecDir, getSysconfDir getSysconfDir25,26
+getBinDir, getLibDir, getDataDir, getLibexecDir,getLibexecDir25,26
+getBinDir, getLibDir, getDataDir,getDataDir25,26
+getBinDir, getLibDir,getLibDir25,26
+getBinDir,getBinDir25,26
+getBinDir getBinDir26,27
+getLibDir getLibDir27,28
+getDataDir getDataDir28,29
+getLibexecDir getLibexecDir29,30
+getSysconfDir getSysconfDir30,31
+getDataFileName getDataFileName32,33
+getDataFileName getDataFileName33,34
+
+./dist/dist-sandbox-302f3dd8/setup/setup.hs,19
+import import0,1
