@@ -71,7 +71,7 @@ benchmark             simple-cell-bench
   Hs-Source-Dirs:       bench
                       , src
                       , test
-  Ghc-Options:          -threaded -Wall  -rts-opts
+  Ghc-Options:          -threaded -Wall  -rtsopts
   Main-Is:              Bench.hs
   Build-Depends:        base
                       , aeson
