@@ -34,7 +34,7 @@ import           Filesystem.Path.CurrentOS hiding (root)
 import           Filesystem
 
 -- -- Controls
-import           Prelude (show, (++) ,($), (.),Ord, (==) , print)
+import           Prelude (show ,($), (.),Ord, (==))
 import           Data.Either
 import           System.IO (IO)
 import           Control.Monad
@@ -256,7 +256,6 @@ initializeSimpleCell ck emptyTargetState root = do
  aStateList <- traverse (traverseAndWait fpr) groupedList
  let stateList =  rights.rights $ Data.Foldable.concat aStateList
  let stateMap = M.fromList stateList
-
  tmap <- newTVarIO stateMap
  tvarFAcid <- newTVarIO fAcidSt
  return $ SimpleCell (CellCore tmap tvarFAcid) ck parentWorkingDir newWorkingDir
@@ -268,7 +267,7 @@ initializeSimpleCell ck emptyTargetState root = do
       traverseLFcn' fp fkRaw = do 
         let fpKey = fp </> (fromText . codeCellKeyFilename ck $ fkRaw)
         est' <- openCKSt fpKey emptyTargetState
-        print $ "opened: " ++ show fpKey    
+--        print $ "opened: " ++ show fpKey    
         return $ fmap (\st' -> (fkRaw, st')) est'       
 
 

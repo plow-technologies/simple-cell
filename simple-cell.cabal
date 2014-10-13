@@ -1,5 +1,5 @@
 Name:                   simple-cell
-Version:                0.2.2
+Version:                0.2.3
 Author:                 Scott <scott.murphy@plowtech.net>
 Maintainer:             Scott <scott.murphy@plowtech.net>
 License:                BSD3
@@ -42,7 +42,7 @@ Test-Suite spec
   Default-Language:     Haskell2010
   Hs-Source-Dirs:       src
                       , test
-  Ghc-Options:          -Wall
+  Ghc-Options:          -threaded -Wall  -prof -auto-all -caf-all -osuf p_o -hisuf p_hi -rtsopts
   Main-Is:              Spec.hs
   Build-Depends:        base
                       , aeson
