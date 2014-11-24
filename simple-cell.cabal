@@ -8,7 +8,9 @@ Synopsis:               Batch Processing of resumable states
 Description:            SimpleCell uses SimpleStore and self generating keys to create batch operations on datatypes
 Cabal-Version:          >= 1.10
 Build-Type:             Simple
-
+Flag                    rebench 
+  Description:          Setup second run for profiling
+  Default:              False
 Library
   Default-Language:     Haskell2010
   HS-Source-Dirs:       src
@@ -71,8 +73,12 @@ benchmark             simple-cell-bench
   Hs-Source-Dirs:       bench
                       , src
                       , test
-  Ghc-Options:          -threaded -Wall  -rtsopts
--- -prof -auto-all -caf-all -osuf p_o -hisuf p_hi -rtsopts
+  if flag(rebench)  {
+  Ghc-Options:          -threaded -Wall  -rtsopts -prof -auto-all -caf-all -osuf p_o -hisuf p_hi 
+  }
+
+  Ghc-Options:          -threaded -Wall  -rtsopts 
+
   Main-Is:              Bench.hs
   Build-Depends:        base
                       , aeson
