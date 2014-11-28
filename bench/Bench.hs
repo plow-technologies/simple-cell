@@ -8,7 +8,7 @@ import SimpleStore
 import System.Random (getStdGen, randoms)
 import Control.Concurrent (threadDelay)
 import TestImport
-
+       
 main :: IO ()
 main = do
   sc <- initializeSampleSC "benchTestCell"
