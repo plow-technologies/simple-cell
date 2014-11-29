@@ -30,7 +30,8 @@ storeState sc st' = do
     Just st -> do
       eT <- modifySimpleStore st (return)
       eT' <- createCheckpoint st
-      _ <- either (\e -> fail (T.unpack $ T.concat [T.pack.show $ e," modify failure"] ) ) (const $ return st') (eT >> eT')
+      a <- either (\e -> fail (T.unpack $ T.concat [T.pack.show $ e," modify failure"] ) ) (const $ return st') (eT >> eT')
+      print a
       return st'
 
 
