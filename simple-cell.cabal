@@ -30,6 +30,7 @@ Library
                       , stm >= 2.4.3
                       , basic-prelude
                       , cereal >= 0.4.0.1
+                      , stm-containers >= 0.2.4 
                       , containers >= 0.5.0.0
                       , bytestring >= 0.10.0.2
                       , directed-keys >= 0.2.1
@@ -58,6 +59,7 @@ Test-Suite spec
                       , lens
                       , text >= 1.1.0.1
                       , QuickCheck >= 2.7.6 && < 2.8.0
+                      , stm-containers >= 0.2.4 
                       , containers
                       , bytestring
                       , basic-prelude
@@ -92,6 +94,7 @@ benchmark             simple-cell-bench
                       , cereal 
                       , lens
                       , text 
+                      , stm-containers >= 0.2.4 
                       , containers
                       , bytestring
                       , basic-prelude

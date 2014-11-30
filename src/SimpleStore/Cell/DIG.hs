@@ -62,6 +62,7 @@ import           Data.Serialize
 
 -- -- Containers 
 import qualified Data.Map.Strict as M
+-- import qualified STMContainers.Map as M
 import qualified Data.Set as S
 
 import           Plow.Extras.List
