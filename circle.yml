@@ -12,6 +12,7 @@ dependencies:
     - "~/simple-cell/dist"
   override:
     - "if [ ! -f /home/ubuntu/.cabal/config ]; then cabal update && echo remote-repo: hackage.plowtech.net:http://hackage.plowtech.net/packages/archive >> ~/.cabal/config; else echo .cabal/config file already exists; fi"
+    - "echo remote-repo: hackage.plowtech.net:http://hackage.plowtech.net/packages/archive >> ~/.cabal/config"
     - cabal update
     - cabal sandbox init
     - cabal install   --only-dependencies --enable-tests -j1
