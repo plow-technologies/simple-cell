@@ -107,12 +107,12 @@ makeTraverseWithKeyXSimpleCell ckN _ stN = do
   f <- (funD (buildTraverseWithKeyName stN)) [(clause [] (normalB traverseWithKeySimpleCellTH) [] ) ] 
   return f 
   where 
-    traverseWithKeySimpleCellTH = (appE (varE 'storeTraverseWithKey ) (varE ckN)) 
+    traverseWithKeySimpleCellTH = (appE (varE 'storeTraverseWithKey_ ) (varE ckN)) 
 
 
 
 buildTraverseWithKeyName :: StoreName -> Name
-buildTraverseWithKeyName stN = mkName.concat $ ["traverseWithKey", (nameBase stN), "SC"]
+buildTraverseWithKeyName stN = mkName.concat $ ["traverseWithKey", (nameBase stN), "SC_"]
   
 
 

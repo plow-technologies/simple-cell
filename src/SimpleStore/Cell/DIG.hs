@@ -22,7 +22,7 @@ module SimpleStore.Cell.DIG (
   , updateStore
   , deleteStore
   , storeFoldrWithKey
-  , storeTraverseWithKey
+  , storeTraverseWithKey_
   , createCellCheckPointAndClose
   ) where
 
@@ -35,7 +35,7 @@ import           Filesystem.Path.CurrentOS hiding (root)
 import           Filesystem
 
 -- -- Controls
-import           Prelude (show ,($), (.),Ord, (==),uncurry)
+import           Prelude (show ,($), (.),Ord, (==))
 import           Data.Either
 import           System.IO (IO)
 import           Control.Monad
@@ -55,7 +55,7 @@ import           Data.Foldable
 import           Data.Maybe
 import           Data.Traversable
 import           SimpleStore.Cell.Internal (ioFoldRListT
-                                           , ioTraverseListT
+                                           , ioTraverseListT_
                                            , ioFromList )
 -- import GHC.Generics
 import           Data.Serialize
@@ -224,33 +224,33 @@ deleteStore ck (SimpleCell (CellCore liveMap tvarFStore) _ pdir rdir) st = do
           M.delete (getKey ck st) liveMap
 
 
-
 storeFoldrWithKey
   :: t6
      -> SimpleCell t t1 t2 t3 t5 t4
      -> (t6 -> DirectedKeyRaw t t1 t2 t3 -> t5 -> IO b -> IO b)
      -> IO b
-     -> IO (IO b)
+     -> IO b
 storeFoldrWithKey ck (SimpleCell (CellCore tlive _) _ _ _) fldFcn seed = do 
   let
     keyValueListT = M.stream $ tlive
 
-  ioFoldRListT (\ (key,simpleSt) b -> do
-                             st <- getSimpleStore simpleSt
-                             fldFcn ck key st b)
-                seed keyValueListT
+  innerIO <- ioFoldRListT (\ (key,simpleSt) b -> do
+                                        st <- getSimpleStore simpleSt
+                                        fldFcn ck key st b)
+                           seed keyValueListT
+  innerIO                   
 
-  
 
-storeTraverseWithKey :: t5 -> SimpleCell t t1 t2 t3 t6 t4
-     -> (t5 -> DirectedKeyRaw t t1 t2 t3 -> t6 -> IO b)
-     -> IO b
 
-storeTraverseWithKey ck (SimpleCell (CellCore tlive _) _ _ _) tvFcn  = do 
+storeTraverseWithKey_ :: t5 -> SimpleCell t t1 t2 t3 t6 t4
+     -> (t5 -> DirectedKeyRaw t t1 t2 t3 -> t6 -> IO ())
+     -> IO ()
+
+storeTraverseWithKey_ ck (SimpleCell (CellCore tlive _) _ _ _) tvFcn  = do 
   let listTMapWrapper = M.stream tlive
-  ioTraverseListT (\(key, cs) -> do
-                    st <- getSimpleStore cs
-                    tvFcnWrp key st) listTMapWrapper
+  ioTraverseListT_ (\(key, cs) -> do
+                     st <- getSimpleStore cs
+                     tvFcnWrp key st) listTMapWrapper
           where
             tvFcnWrp =  tvFcn ck
 
@@ -259,7 +259,7 @@ storeTraverseWithKey ck (SimpleCell (CellCore tlive _) _ _ _) tvFcn  = do
 createCellCheckPointAndClose ::   SimpleCell t t1 t2 t3 st (SimpleStore CellKeyStore) -> IO ()
 createCellCheckPointAndClose (SimpleCell (CellCore liveMap tvarFStore) _ _pdir _rdir ) = do 
   let listTMapWrapper = M.stream liveMap
-  void $ ioTraverseListT (\(k,v) -> closeSimpleStore v )  listTMapWrapper
+  void $ ioTraverseListT_ (\(_,v) -> closeSimpleStore v )  listTMapWrapper
   fStore <- readTVarIO tvarFStore
   void $ createCheckpoint fStore >> closeSimpleStore fStore
 

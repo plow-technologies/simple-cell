@@ -19,6 +19,7 @@ main = do
   void $ traverse (insertSampleSC sc) sis
   samples <- traverse (storeState sc) sis
   forever $ do
+    print "restart"
     void $ traverse checkpointWithoutReGet  (catMaybes samples)
 
 

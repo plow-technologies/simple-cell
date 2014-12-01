@@ -4,7 +4,7 @@
 module SimpleStore.Cell.Internal
     (
     ioFoldRListT ,
-    ioTraverseListT,
+    ioTraverseListT_ ,
     ioFromList
     ) where
 
@@ -12,7 +12,7 @@ module SimpleStore.Cell.Internal
 import           Control.Concurrent.STM
 import qualified ListT
 import qualified STMContainers.Map as M
-import Control.Monad
+
 import Data.Foldable
 ioFoldRListT :: ListT.MonadTransUncons t =>
        (a -> b -> b) -> b -> t STM a -> IO b
@@ -38,21 +38,26 @@ ioFoldRListT' fcn !iseed lst = do
 
 
 
-ioTraverseListT :: ListT.MonadTransUncons t =>
-                                          (a -> IO b) ->  
-                                          t STM a -> 
-                                          IO b
-ioTraverseListT fcn stmA = ioTraverseListT' fcn stmA 
+ioTraverseListT_ :: ListT.MonadTransUncons t =>
+                                           (a -> IO b) ->  
+                                           t STM a -> 
+                                           IO ()
+ioTraverseListT_ fcn stmA = ioTraverseListT_' fcn stmA 
 
 
-ioTraverseListT' fcn stmListT = do 
-          (ma,mlst) <- atomically $ do
-                         ma <- ListT.head stmListT
-                         mlst <- ListT.tail stmListT
-                         return (ma,mlst)
+ioTraverseListT_'
+  :: ListT.MonadTransUncons t => (a -> IO a1) -> t STM a -> IO ()
+ioTraverseListT_' fcn stmListT = do 
+          (ma, mlst) <- atomically $ do
+                          ma <- ListT.head stmListT
+                          mlst <- ListT.tail stmListT
+                          return (ma,mlst)
           case ma  of
-            Nothing -> mzero
-            (Just a) -> fcn a
+            Nothing -> return ()
+            (Just a) -> fcn a >>
+                         maybe  (return ())
+                                (ioTraverseListT_' fcn   )
+                                mlst
 
 
 ioFromList lst = atomically  createMap 

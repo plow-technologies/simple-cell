@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings, DeriveGeneric #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module TestImport where
 
@@ -13,7 +14,7 @@ import Control.Applicative ((<$>))
 import Data.Traversable (traverse)
 import Data.Maybe (catMaybes)
 import Control.Monad (void)
-
+import Data.Hashable
 -- Needed for store creation
 import           SimpleStore
 import           SimpleStore.Cell
@@ -23,7 +24,7 @@ import           DirectedKeys.Types
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 
-import           Data.Map
+
 
 
 
@@ -40,27 +41,27 @@ data Sample = Sample {
 
 
 newtype SampleDst = SampleDst { unSampleDst :: Int }
- deriving (Eq,Ord,Generic) 
+ deriving (Eq,Ord,Generic,Hashable) 
 
 instance Serialize SampleDst where
 
 
   
 newtype SampleSrc = SampleSrc { unSampleSrc :: Int }
- deriving (Eq,Ord,Generic) 
+ deriving (Eq,Ord,Generic ,Hashable) 
 
 instance Serialize SampleSrc where
 
 
 
 newtype SampleKey = SampleKey { unSampleKey :: Int } 
- deriving (Eq,Ord,Generic) 
+ deriving (Eq,Ord,Generic ,Hashable) 
 
 instance Serialize SampleKey where
 
 
 newtype SampleTime = SampleTime { unSampleTime :: Int }
- deriving (Eq,Ord,Generic) 
+ deriving (Eq,Ord,Generic ,Hashable) 
 
 instance Serialize SampleTime where
 
@@ -130,47 +131,65 @@ getKeyFcn st = DKeyRaw (SampleKey . sampleInt $ st) sampleSrc sampleDst sampleTi
 
 $(makeStoreCell 'sampleStoreCellKey 'initSample ''Sample)
 
+-- | TH Defnitions
 
----------------------
-getSampleSC :: SampleCell -> Sample -> IO (Maybe (SimpleStore Sample))
+getSampleSC :: SimpleCell
+                       SampleKey
+                       SampleSrc
+                       SampleDst
+                       SampleTime
+                       Sample
+                       (SimpleStore CellKeyStore)
+                     -> Sample -> IO (Maybe (SimpleStore Sample))
 
 
-updateSampleSC :: SampleCell
-                  -> SimpleStore Sample -> Sample -> IO ()
+updateSampleSC :: SimpleCell SampleKey SampleSrc SampleDst SampleTime Sample st'
+                        -> SimpleStore Sample -> Sample -> IO ()
 
 
-createCheckpointAndCloseSampleSC :: SampleCell 
+createCheckpointAndCloseSampleSC :: SimpleCell t t1 t2 t3 st (SimpleStore CellKeyStore)
                                           -> IO ()
-
--- traverseWithKeySampleSC :: SampleCell -> SampleCK -> DirectedSampleKey -> Sample -> IO b -> IO (Map DirectedSampleKey b)
-
-
-traverseWithKeySampleSC :: SampleCell
-                                 -> (SampleCK
-                                     -> DirectedSampleKey -> Sample -> IO b)
-                                 -> IO (Map (DirectedSampleKey) b)
+                                          
 
 
-foldlWithKeySampleSC :: SampleCell
-                              -> (SampleCK
-                                  -> DirectedSampleKey ->Sample -> IO b -> IO b)
-                              -> IO b
-                              -> IO b
-deleteSampleSC :: SimpleCell
+traverseWithKeySampleSC_ ::  SimpleCell t t1 t2 t3 t6 t4
+                                  -> (CellKey SampleKey SampleSrc SampleDst SampleTime Sample
+                                      -> DirectedKeyRaw t t1 t2 t3 -> t6 -> IO ())
+                                  -> IO ()
+
+
+insertSampleSC :: SimpleCell
+                          SampleKey
+                          SampleSrc
+                          SampleDst
+                          SampleTime
+                          Sample
+                          (SimpleStore CellKeyStore)
+                        -> Sample -> IO (SimpleStore Sample)
+
+deleteSampleSC ::  SimpleCell
                           SampleKey
                           SampleSrc
                           SampleDst
                           SampleTime
                           t
                           (SimpleStore CellKeyStore)
-                        -> Sample -> IO ()
+                        -> Sample -> IO ()                                  
 
-insertSampleSC :: SampleCell
-                        -> Sample -> IO (SimpleStore Sample)
-
+foldlWithKeySampleSC :: SimpleCell t t1 t2 t3 t5 t4
+                              -> (CellKey SampleKey SampleSrc SampleDst SampleTime Sample
+                                  -> DirectedKeyRaw t t1 t2 t3 -> t5 -> IO b -> IO b)
+                              -> IO b
+                              -> IO b
 initializeSampleSC :: T.Text
-                            -> IO SampleCell
-                                 
+                            -> IO
+                                 (SimpleCell
+                                    SampleKey
+                                    SampleSrc
+                                    SampleDst
+                                    SampleTime
+                                    Sample
+                                    (SimpleStore CellKeyStore))
 
 
 
