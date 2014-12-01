@@ -47,7 +47,8 @@ import GHC.Generics
 import DirectedKeys.Types
 
 -- Containers 
-import qualified Data.Map.Strict as M 
+-- import qualified Data.Map.Strict as M 
+import qualified STMContainers.Map as M
 import qualified Data.Set as S
 
 -- Strings /Monomorphs 
@@ -95,7 +96,7 @@ instance Serialize FileKey where
 -- Dormant means currently not loaded
 
 data CellCore  k src dst tm tvlive stdormant = CellCore { 
-      ccLive     ::  (TVar (M.Map (DirectedKeyRaw  k src dst tm) tvlive ))
+      ccLive     ::  ((M.Map (DirectedKeyRaw  k src dst tm) tvlive ))
       ,ccDormant ::  (TVar stdormant)
     }
 

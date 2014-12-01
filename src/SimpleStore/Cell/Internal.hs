@@ -3,14 +3,17 @@
 
 module SimpleStore.Cell.Internal
     (
-    ioFoldRListT
+    ioFoldRListT ,
+    ioTraverseListT,
+    ioFromList
     ) where
 
 
 import           Control.Concurrent.STM
 import qualified ListT
+import qualified STMContainers.Map as M
 import Control.Monad
-
+import Data.Foldable
 ioFoldRListT :: ListT.MonadTransUncons t =>
        (a -> b -> b) -> b -> t STM a -> IO b
 ioFoldRListT fcn !seed lst = ioFoldRListT' fcn (return seed) lst 
@@ -50,4 +53,13 @@ ioTraverseListT' fcn stmListT = do
           case ma  of
             Nothing -> mzero
             (Just a) -> fcn a
+
+
+ioFromList lst = atomically  createMap 
+  where 
+    createMap = do 
+                   Data.Foldable.foldl' (\stmAccumulatorMap (k,v) -> do
+                                                     accumulatorMap <- stmAccumulatorMap
+                                                     M.insert v k accumulatorMap 
+                                                     return accumulatorMap )  (M.new) lst
 

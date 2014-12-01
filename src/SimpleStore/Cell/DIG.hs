@@ -54,7 +54,9 @@ import           Control.Concurrent.Async
 import           Data.Foldable
 import           Data.Maybe
 import           Data.Traversable
-import           SimpleStore.Cell.Internal (ioFoldRListT)
+import           SimpleStore.Cell.Internal (ioFoldRListT
+                                           , ioTraverseListT
+                                           , ioFromList )
 -- import GHC.Generics
 import           Data.Serialize
 
@@ -70,7 +72,7 @@ import           Data.Serialize
 -- ==================================================
 
 import qualified STMContainers.Map as M
-import qualified ListT
+
 
 -- ==================================================
 import qualified Data.Set as S
@@ -223,12 +225,12 @@ deleteStore ck (SimpleCell (CellCore liveMap tvarFStore) _ pdir rdir) st = do
 
 
 
-
-storeFoldrWithKey :: t6  ->
-                      SimpleCell t t1 t2 t3 t5 t4 ->
-                      (t6 -> DirectedKeyRaw t t1 t2 t3 -> t5 -> b -> b)
-                     -> b
-                     -> b
+storeFoldrWithKey
+  :: t6
+     -> SimpleCell t t1 t2 t3 t5 t4
+     -> (t6 -> DirectedKeyRaw t t1 t2 t3 -> t5 -> IO b -> IO b)
+     -> IO b
+     -> IO (IO b)
 storeFoldrWithKey ck (SimpleCell (CellCore tlive _) _ _ _) fldFcn seed = do 
   let
     keyValueListT = M.stream $ tlive
@@ -238,32 +240,35 @@ storeFoldrWithKey ck (SimpleCell (CellCore tlive _) _ _ _) fldFcn seed = do
                              fldFcn ck key st b)
                 seed keyValueListT
 
-
-
-
+  
 
 storeTraverseWithKey :: t5 -> SimpleCell t t1 t2 t3 t6 t4
      -> (t5 -> DirectedKeyRaw t t1 t2 t3 -> t6 -> IO b)
-     -> IO (M.Map (DirectedKeyRaw t t1 t2 t3) b)
+     -> IO b
+
 storeTraverseWithKey ck (SimpleCell (CellCore tlive _) _ _ _) tvFcn  = do 
   let listTMapWrapper = M.stream tlive
-  ListT.traverse (\key cs -> do
-                              st <- getSimpleStore cs
-                              tvFcnWrp key st) listTMapWrapper
-      where
-        tvFcnWrp =  tvFcn ck
+  ioTraverseListT (\(key, cs) -> do
+                    st <- getSimpleStore cs
+                    tvFcnWrp key st) listTMapWrapper
+          where
+            tvFcnWrp =  tvFcn ck
 
 
 
 createCellCheckPointAndClose ::   SimpleCell t t1 t2 t3 st (SimpleStore CellKeyStore) -> IO ()
-createCellCheckPointAndClose (SimpleCell (CellCore tlive tvarFStore) _ _pdir _rdir ) = do 
-  liveMap <- readTVarIO tlive 
-  void $ traverse closeSimpleStore  liveMap
+createCellCheckPointAndClose (SimpleCell (CellCore liveMap tvarFStore) _ _pdir _rdir ) = do 
+  let listTMapWrapper = M.stream liveMap
+  void $ ioTraverseListT (\(k,v) -> closeSimpleStore v )  listTMapWrapper
   fStore <- readTVarIO tvarFStore
   void $ createCheckpoint fStore >> closeSimpleStore fStore
 
 
-initializeSimpleCell :: (Data.Serialize.Serialize stlive, Ord tm, Ord dst, Ord src, Ord k) =>
+initializeSimpleCell :: (Data.Serialize.Serialize stlive ,
+                         Ord tm, Hashable tm ,
+                         Ord dst, Hashable dst ,
+                         Ord src, Hashable src ,
+                         Ord k, Hashable k ) =>
      CellKey k src dst tm stlive
      -> stlive
      -> Text
@@ -291,10 +296,9 @@ initializeSimpleCell ck emptyTargetState root = do
  let groupedList = groupUp 16 (rights . S.toList $ setEitherFileKeyRaw)  
  aStateList <- traverse (traverseAndWait fpr) groupedList
  let stateList =  rights.rights $ Data.Foldable.concat aStateList
- let stateMap = fromList stateList
- tmap <- newTVarIO stateMap
+ stateMap <-  ioFromList stateList
  tvarFAcid <- newTVarIO fAcidSt
- return $ SimpleCell (CellCore tmap tvarFAcid) ck parentWorkingDir newWorkingDir
+ return $ SimpleCell (CellCore stateMap tvarFAcid) ck parentWorkingDir newWorkingDir
   where
       traverseAndWait fp l = do
         aRes <- traverse (traverseLFcn fp) l
@@ -316,8 +320,3 @@ openCKSt fpKey _emptyTargetState = openSimpleStore fpKey
 -- -- type AEither a = Either StoreCellErrora
 
 
-fromList lst = atomically $ createMap 
-  where 
-    createMap = do newMap <- M.new
-                   Data.Foldable.foldl' (\(k,v) accumulatorMap -> 
-                                           M.insert v k accumulatorMap)  lst
