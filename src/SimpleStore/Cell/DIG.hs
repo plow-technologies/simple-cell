@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings, NoImplicitPrelude #-}
 {-# LANGUAGE TypeFamilies,ScopedTypeVariables #-}
+{-# LANGUAGE BangPatterns #-}
 
 {-| 
 
@@ -34,7 +35,7 @@ import           Filesystem.Path.CurrentOS hiding (root)
 import           Filesystem
 
 -- -- Controls
-import           Prelude (show ,($), (.),Ord, (==))
+import           Prelude (show ,($), (.),Ord, (==),uncurry)
 import           Data.Either
 import           System.IO (IO)
 import           Control.Monad
@@ -53,6 +54,7 @@ import           Control.Concurrent.Async
 import           Data.Foldable
 import           Data.Maybe
 import           Data.Traversable
+import           SimpleStore.Cell.Internal (ioFoldRListT)
 -- import GHC.Generics
 import           Data.Serialize
 
@@ -61,8 +63,16 @@ import           Data.Serialize
 -- import DirectedKeys.Types
 
 -- -- Containers 
-import qualified Data.Map.Strict as M
--- import qualified STMContainers.Map as M
+-- import qualified Data.Map.Strict as M
+
+-- ==================================================
+-- STM Containers and helper functions
+-- ==================================================
+
+import qualified STMContainers.Map as M
+import qualified ListT
+
+-- ==================================================
 import qualified Data.Set as S
 
 import           Plow.Extras.List
@@ -73,6 +83,7 @@ import           Data.Text
 -- Component Libraries
 import           DirectedKeys.Types
 import           SimpleStore.Cell.Types
+import Data.Hashable
 import           SimpleStore
 
 
@@ -131,12 +142,16 @@ insertSimpleCellPathFileKey st fk =  do
 
 -- | Warning, inserting a state that is already inserted throws an exception 
 
-insertStore :: (Ord k, Ord src, Ord dst, Ord tm,Serialize st) =>
-                     CellKey k src dst tm st
-                     -> SimpleCell k src dst tm st (SimpleStore CellKeyStore)
-                     -> st
-                     -> IO (SimpleStore st)                     
-insertStore ck (SimpleCell (CellCore tlive tvarFStore) _ pdir rdir)  st = do
+insertStore :: (Ord k  , Hashable k ,
+                Ord src, Hashable src,
+                Ord dst, Hashable dst,
+                Ord tm , Hashable tm ,
+                Serialize st) =>
+                CellKey k src dst tm st
+                -> SimpleCell k src dst tm st (SimpleStore CellKeyStore)
+                -> st
+                -> IO (SimpleStore st)                     
+insertStore ck (SimpleCell (CellCore liveMap tvarFStore) _ pdir rdir)  st = do
   let newStatePath = codeCellKeyFilename ck.getKey ck $ st
   fullStatePath <- makeWorkingStatePath pdir rdir newStatePath
   let fk = makeFileKey ck st
@@ -151,39 +166,48 @@ insertStore ck (SimpleCell (CellCore tlive tvarFStore) _ pdir rdir)  st = do
       return simpleStore
      where 
        stmInsert st' = do 
-         liveMap <- readTVar tlive        
-         writeTVar tlive $ M.insert (getKey ck st) st' liveMap
+--         liveMap <- readTVar tlive        
+         M.insert st' (getKey ck st)  liveMap 
 
-getStore :: (Ord k, Ord src, Ord dst, Ord tm,Serialize st) =>
-                     CellKey k src dst tm st
-                     -> SimpleCell k src dst tm st (SimpleStore CellKeyStore)
-                     -> st
-                     -> IO (Maybe (SimpleStore st))
-getStore ck sc st = liftM (M.lookup dkr) (readTVarIO cMap )
+getStore :: (Ord k, Hashable k,
+             Ord src, Hashable src,
+             Ord dst, Hashable dst,
+             Ord tm, Hashable tm,
+             Serialize st) =>
+             CellKey k src dst tm st
+             -> SimpleCell k src dst tm st (SimpleStore CellKeyStore)
+             -> st
+             -> IO (Maybe (SimpleStore st))
+getStore ck sc st = atomically $ (M.lookup dkr) ( cellMap )
   where
     dkr = getKey ck st
-    cMap = ccLive.cellCore $ sc
+    cellMap = ccLive.cellCore $ sc
 
 
 
 updateStore
-  :: (Ord t3, Ord t2, Ord t1, Ord t) =>
-     CellKey t t1 t2 t3 st
-     -> SimpleCell t t1 t2 t3 t4 t5 -> SimpleStore t4 -> st -> IO ()
-updateStore ck (SimpleCell (CellCore tlive _tvarFStore) _ _pdir _rdir )  simpleSt st =  atomically $ stmInsert simpleSt
+  :: (Ord k,   Hashable k,
+      Ord src, Hashable src,
+      Ord dst, Hashable dst,
+      Ord tm,  Hashable tm) =>
+     CellKey k src dst tm st
+     -> SimpleCell k src dst tm st st' -> SimpleStore st -> st -> IO ()
+updateStore ck (SimpleCell (CellCore liveMap _tvarFStore) _ _pdir _rdir )  simpleSt st =  atomically $ stmInsert simpleSt
    where 
      stmInsert st' = do 
-       liveMap <- readTVar tlive        
-       writeTVar tlive $ M.insert (getKey ck st) st' liveMap
+       M.insert st' (getKey ck st)  liveMap
 
 
-deleteStore  :: (Ord tm, Ord dst, Ord src, Ord k) =>
+deleteStore  :: (Ord tm, Hashable tm ,
+                 Ord dst, Hashable dst, 
+                 Ord src, Hashable src , 
+                 Ord k, Hashable k) =>
      CellKey k src dst tm st
      -> SimpleCell k src dst tm t (SimpleStore CellKeyStore)
      -> st
      -> IO ()
 
-deleteStore ck (SimpleCell (CellCore tlive tvarFStore) _ pdir rdir) st = do 
+deleteStore ck (SimpleCell (CellCore liveMap tvarFStore) _ pdir rdir) st = do 
   let targetStatePath = codeCellKeyFilename ck.getKey ck $ st 
   void $ atomically stmDelete
   fStore <- readTVarIO tvarFStore
@@ -195,30 +219,41 @@ deleteStore ck (SimpleCell (CellCore tlive tvarFStore) _ pdir rdir) st = do
   removeTree np
      where
         stmDelete = do 
-          liveMap <- readTVar tlive
-          writeTVar tlive $ M.delete (getKey ck st) liveMap
+          M.delete (getKey ck st) liveMap
 
-storeFoldrWithKey :: t6  -> SimpleCell t t1 t2 t3 t5 t4 -> (t6 -> DirectedKeyRaw t t1 t2 t3 -> t5 -> IO b -> IO b)
-                     -> IO b
-                     -> IO b
+
+
+
+storeFoldrWithKey :: t6  ->
+                      SimpleCell t t1 t2 t3 t5 t4 ->
+                      (t6 -> DirectedKeyRaw t t1 t2 t3 -> t5 -> b -> b)
+                     -> b
+                     -> b
 storeFoldrWithKey ck (SimpleCell (CellCore tlive _) _ _ _) fldFcn seed = do 
-  liveMap <- readTVarIO tlive 
-  M.foldrWithKey (\key simpleSt b -> do
+  let
+    keyValueListT = M.stream $ tlive
+
+  ioFoldRListT (\ (key,simpleSt) b -> do
                              st <- getSimpleStore simpleSt
-                             fldFcn ck key st  b) seed liveMap
+                             fldFcn ck key st b)
+                seed keyValueListT
+
+
+
 
 
 storeTraverseWithKey :: t5 -> SimpleCell t t1 t2 t3 t6 t4
      -> (t5 -> DirectedKeyRaw t t1 t2 t3 -> t6 -> IO b)
      -> IO (M.Map (DirectedKeyRaw t t1 t2 t3) b)
 storeTraverseWithKey ck (SimpleCell (CellCore tlive _) _ _ _) tvFcn  = do 
-  liveMap <- readTVarIO tlive 
-  M.traverseWithKey (\key cs -> do
-                        st <- getSimpleStore cs
-                        tvFcnWrp key st)  liveMap
+  let listTMapWrapper = M.stream tlive
+  ListT.traverse (\key cs -> do
+                              st <- getSimpleStore cs
+                              tvFcnWrp key st) listTMapWrapper
       where
-        tvFcnWrp =  tvFcn ck 
-          
+        tvFcnWrp =  tvFcn ck
+
+
 
 createCellCheckPointAndClose ::   SimpleCell t t1 t2 t3 st (SimpleStore CellKeyStore) -> IO ()
 createCellCheckPointAndClose (SimpleCell (CellCore tlive tvarFStore) _ _pdir _rdir ) = do 
@@ -256,7 +291,7 @@ initializeSimpleCell ck emptyTargetState root = do
  let groupedList = groupUp 16 (rights . S.toList $ setEitherFileKeyRaw)  
  aStateList <- traverse (traverseAndWait fpr) groupedList
  let stateList =  rights.rights $ Data.Foldable.concat aStateList
- let stateMap = M.fromList stateList
+ let stateMap = fromList stateList
  tmap <- newTVarIO stateMap
  tvarFAcid <- newTVarIO fAcidSt
  return $ SimpleCell (CellCore tmap tvarFAcid) ck parentWorkingDir newWorkingDir
@@ -281,3 +316,8 @@ openCKSt fpKey _emptyTargetState = openSimpleStore fpKey
 -- -- type AEither a = Either StoreCellErrora
 
 
+fromList lst = atomically $ createMap 
+  where 
+    createMap = do newMap <- M.new
+                   Data.Foldable.foldl' (\(k,v) accumulatorMap -> 
+                                           M.insert v k accumulatorMap)  lst
