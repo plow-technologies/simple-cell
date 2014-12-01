@@ -1,0 +1,30 @@
+{-# LANGUAGE OverloadedStrings, NoImplicitPrelude,TemplateHaskell, GeneralizedNewtypeDeriving, DeriveGeneric #-}
+{-# LANGUAGE RecordWildCards, TypeFamilies,DeriveDataTypeable,ScopedTypeVariables #-}
+
+{-| 
+
+    This module defines the types used in the Template haskell routine in order to automate the creation of a
+    higher level set of access functions to the Atomic Data in SimpleStore State.
+
+    Most notably, it allows datatypes that look like Keyed vectors to make changes without write locking above the Key Level
+
+    This is very important when writing to Time Series Data.  
+    
+|-} 
+
+
+
+module SimpleStore.Cell.DIG (StoreCellError(..)
+                            , CellKey (..)
+                            , CellKeyStore
+                            , SimpleCell
+                            , DeleteSimpleCellPathFileKey
+                            , InsertSimpleCellPathFileKey
+                            , initializeSimpleCell
+                            , insertStore
+                            , updateStore
+                            , deleteStore
+                            , storeFoldlWithKey
+                            , storeTraverseWithKey
+                            , createCellCheckPointAndClose
+                            ) where

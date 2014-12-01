@@ -9,6 +9,10 @@ import           GHC.Generics
 import           Data.Serialize
 import           Data.Aeson.Serialize
 
+import Control.Applicative ((<$>))
+import Data.Traversable (traverse)
+import Data.Maybe (catMaybes)
+import Control.Monad (void)
 
 -- Needed for store creation
 import           SimpleStore
@@ -107,6 +111,11 @@ type SampleCK = CellKey SampleKey SampleSrc SampleDst SampleTime Sample
 
 fullEncodeFcn :: DirectedSampleKey -> T.Text
 fullEncodeFcn = TE.decodeUtf8 . encodeKey
+
+fullDecodeFcn :: (Serialize datetime, Serialize destination, Serialize source,
+                        Serialize key) =>
+                       T.Text
+                       -> Either T.Text (DirectedKeyRaw key source destination datetime)
 fullDecodeFcn akey = case (decodeKey $ TE.encodeUtf8 $ akey) of
                        Left e -> Left . T.pack $ e
                        Right r -> Right r
@@ -162,3 +171,19 @@ insertSampleSC :: SampleCell
 initializeSampleSC :: T.Text
                             -> IO SampleCell
                                  
+
+
+
+runRestartTest :: [Int] -> IO [Int]
+runRestartTest i = do
+  let sis = Sample <$> i
+  sc <- initializeSampleSC "testSampleCell"
+  void $ traverse (insertSampleSC sc ) sis
+  createCheckpointAndCloseSampleSC sc
+  sc' <- initializeSampleSC "testSampleCell"
+  storeSamples <- traverse (getSampleSC sc') sis
+  samples <- traverse (traverse getSimpleStore) storeSamples
+  return $ sampleInt <$> (catMaybes samples)
+
+
+  

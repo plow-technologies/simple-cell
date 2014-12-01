@@ -8,7 +8,9 @@ Synopsis:               Batch Processing of resumable states
 Description:            SimpleCell uses SimpleStore and self generating keys to create batch operations on datatypes
 Cabal-Version:          >= 1.10
 Build-Type:             Simple
-
+Flag                    rebench 
+  Description:          Setup second run for profiling
+  Default:              False
 Library
   Default-Language:     Haskell2010
   HS-Source-Dirs:       src
@@ -20,7 +22,7 @@ Library
                         SimpleStore.Cell.TH
                         SimpleStore.Cell.TH.StoreMakers                                      
   Build-Depends:        base >= 4 && < 5
-                      , simple-store >= 0.1.1
+                      , simple-store >= 0.1.2.1
                       , text >= 1.1.0.1 && < 1.2
                       , system-filepath >= 0.4.10
                       , system-fileio >= 0.3.12
@@ -28,6 +30,7 @@ Library
                       , stm >= 2.4.3
                       , basic-prelude
                       , cereal >= 0.4.0.1
+                      , stm-containers >= 0.2.4 
                       , containers >= 0.5.0.0
                       , bytestring >= 0.10.0.2
                       , directed-keys >= 0.2.1
@@ -42,7 +45,7 @@ Test-Suite spec
   Default-Language:     Haskell2010
   Hs-Source-Dirs:       src
                       , test
-  Ghc-Options:          -threaded -Wall  -prof -auto-all -caf-all -osuf p_o -hisuf p_hi -rtsopts
+  Ghc-Options:          -threaded -Wall  
   Main-Is:              Spec.hs
   Build-Depends:        base
                       , aeson
@@ -55,8 +58,8 @@ Test-Suite spec
                       , cereal 
                       , lens
                       , text >= 1.1.0.1
-                      , hspec
                       , QuickCheck >= 2.7.6 && < 2.8.0
+                      , stm-containers >= 0.2.4 
                       , containers
                       , bytestring
                       , basic-prelude
@@ -65,6 +68,43 @@ Test-Suite spec
                       , stm
                       , system-filepath
                       , plow-extras-list
+
+benchmark             simple-cell-bench 
+  Type:                 exitcode-stdio-1.0
+  Default-Language:     Haskell2010
+  Hs-Source-Dirs:       bench
+                      , src
+                      , test
+  if flag(rebench)  {
+  Ghc-Options:          -threaded -Wall  -rtsopts -prof -auto-all -caf-all -osuf p_o -hisuf p_hi 
+  }
+
+  Ghc-Options:          -threaded -Wall  -rtsopts 
+
+  Main-Is:              Bench.hs
+  Build-Depends:        base
+                      , aeson
+                      , aeson-serialize
+                      , criterion
+                      , mtl
+                      , async
+                      , random
+                      , simple-store
+                      , template-haskell
+                      , cereal 
+                      , lens
+                      , text 
+                      , stm-containers >= 0.2.4 
+                      , containers
+                      , bytestring
+                      , basic-prelude
+                      , directed-keys
+                      , system-fileio 
+                      , stm
+                      , system-filepath
+                      , plow-extras-list
+
+
 
 Source-Repository head
   Type:                 git
