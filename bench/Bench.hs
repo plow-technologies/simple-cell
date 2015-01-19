@@ -15,7 +15,7 @@ main :: IO ()
 main = do
   sc <- initializeSampleSC "benchTestCell"
   stdGen <- getStdGen 
-  let sis = take 5000 $ Sample <$> randoms stdGen
+  let sis = take 500 $ Sample <$> randoms stdGen
   void $ traverse (insertSampleSC sc) sis
   samples <- traverse (storeState sc) sis
   forever $ do
