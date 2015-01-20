@@ -83,7 +83,7 @@ benchmark             simple-cell-bench
   Ghc-Options:          -threaded -Wall  -rtsopts -prof -auto-all -caf-all -osuf p_o -hisuf p_hi 
   }
 
-  Ghc-Options:          -threaded -Wall  -rtsopts 
+  Ghc-Options:          -threaded -Wall  -rtsopts -fllvm -static
 
   Main-Is:              Bench.hs
   Build-Depends:        base
