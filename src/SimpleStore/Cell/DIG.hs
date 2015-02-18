@@ -245,14 +245,20 @@ deleteStore (SimpleCell (CellCore liveMap tvarFStore) _ pdir rdir) st = do
 
 
 storeFoldrWithKey
-  :: a
-     -> SimpleCell k src dst tm stlive stdormant
-     -> (a -> DirectedKeyRaw k src dst tm -> stlive -> IO b -> IO b)
+  :: (SimpleCellState stlive,
+      k ~ SimpleCellKey stlive,
+      src ~ SimpleCellSrc stlive,
+      dst ~ SimpleCellDst stlive,
+      tm ~ SimpleCellDateTime stlive) =>
+
+     SimpleCell k src dst tm stlive stdormant
+     -> (CellKey k src dst tm stlive -> DirectedKeyRaw k src dst tm -> stlive -> IO b -> IO b)
      -> IO b
      -> IO b
-storeFoldrWithKey ck (SimpleCell (CellCore tlive _) _ _ _) fldFcn seed = do 
+storeFoldrWithKey (SimpleCell (CellCore tlive _) _ _ _) fldFcn seed = do 
   let
     keyValueListT = M.stream $ tlive
+    ck = simpleCellKey
 
   innerIO <- ioFoldRListT (\ (key,simpleSt) b -> do
                                         st <- getSimpleStore simpleSt
@@ -262,16 +268,22 @@ storeFoldrWithKey ck (SimpleCell (CellCore tlive _) _ _ _) fldFcn seed = do
 
 
 
-storeTraverseWithKey_ :: a -> SimpleCell k src dst tm stlive stdormant
-     -> (a -> DirectedKeyRaw k src dst tm -> stlive -> IO ())
+storeTraverseWithKey_ :: (SimpleCellState stlive,
+                          k ~ SimpleCellKey stlive,
+                          src ~ SimpleCellSrc stlive,
+                          dst ~ SimpleCellDst stlive,
+                          tm ~ SimpleCellDateTime stlive) =>
+     SimpleCell k src dst tm stlive stdormant
+     -> (CellKey k src dst tm stlive -> DirectedKeyRaw k src dst tm -> stlive -> IO ())
      -> IO ()
 
-storeTraverseWithKey_ ck (SimpleCell (CellCore tlive _) _ _ _) tvFcn  = do 
+storeTraverseWithKey_ (SimpleCell (CellCore tlive _) _ _ _) tvFcn  = do 
   let listTMapWrapper = M.stream tlive
   ioTraverseListT_ (\(key, cs) -> do
                      st <- getSimpleStore cs
                      tvFcnWrp key st) listTMapWrapper
           where
+            ck = simpleCellKey
             tvFcnWrp =  tvFcn ck
 
 
