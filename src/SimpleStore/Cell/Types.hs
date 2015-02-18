@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, NoImplicitPrelude,TemplateHaskell, GeneralizedNewtypeDeriving, DeriveGeneric #-}
+{-# LANGUAGE OverloadedStrings, NoImplicitPrelude, GeneralizedNewtypeDeriving, DeriveGeneric #-}
 {-# LANGUAGE RecordWildCards, TypeFamilies,DeriveDataTypeable,ScopedTypeVariables #-}
 
 {-| 
@@ -18,6 +18,7 @@ module SimpleStore.Cell.Types (StoreCellError(..)
                             , SimpleCell (..)
                             , CellCore (..)
                             , FileKey (..)
+                            , SimpleCellState (..)
                             ) where
 
 
@@ -133,4 +134,12 @@ data SimpleCell  k src dst tm stlive stdormant = SimpleCell {
 data StoreCellError  = InsertFail    !Text 
                      | DeleteFail    !Text
                      | StateNotFound !Text
+
+-- | To create an instance of SimpleCellState one must provide a CellKey 
+class SimpleCellState st where
+  type SimpleCellKey st
+  type SimpleCellSrc st
+  type SimpleCellDst st
+  type SimpleCellDateTime st
+  simpleCellKey :: CellKey (SimpleCellKey st) (SimpleCellSrc st) (SimpleCellDst st) (SimpleCellDateTime st) st
 

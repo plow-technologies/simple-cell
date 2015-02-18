@@ -148,12 +148,17 @@ insertStore :: (Ord k  , Hashable k ,
                 Ord src, Hashable src,
                 Ord dst, Hashable dst,
                 Ord tm , Hashable tm ,
+                SimpleCellState st,
+                k ~ SimpleCellKey st,
+                src ~ SimpleCellSrc st,
+                dst ~ SimpleCellDst st,
+                tm ~ SimpleCellDateTime st,
                 Serialize st) =>
-                CellKey k src dst tm st
-                -> SimpleCell k src dst tm st (SimpleStore CellKeyStore)
+                SimpleCell k src dst tm st (SimpleStore CellKeyStore)
                 -> st
                 -> IO (SimpleStore st)                     
-insertStore ck (SimpleCell (CellCore liveMap tvarFStore) _ pdir rdir)  st = do
+insertStore (SimpleCell (CellCore liveMap tvarFStore) _ pdir rdir)  st = do
+  let ck = simpleCellKey
   let newStatePath = codeCellKeyFilename ck.getKey ck $ st
   fullStatePath <- makeWorkingStatePath pdir rdir newStatePath
   let fk = makeFileKey ck st
@@ -175,13 +180,18 @@ getStore :: (Ord k, Hashable k,
              Ord src, Hashable src,
              Ord dst, Hashable dst,
              Ord tm, Hashable tm,
+             SimpleCellState st,
+             k ~ SimpleCellKey st,
+             src ~ SimpleCellSrc st,
+             dst ~ SimpleCellDst st,
+             tm ~ SimpleCellDateTime st,
              Serialize st) =>
-             CellKey k src dst tm st
-             -> SimpleCell k src dst tm st (SimpleStore CellKeyStore)
+             SimpleCell k src dst tm st (SimpleStore CellKeyStore)
              -> st
              -> IO (Maybe (SimpleStore st))
-getStore ck sc st = atomically $ (M.lookup dkr) ( cellMap )
+getStore sc st = atomically $ (M.lookup dkr) ( cellMap )
   where
+    ck = simpleCellKey
     dkr = getKey ck st
     cellMap = ccLive.cellCore $ sc
 
@@ -191,25 +201,34 @@ updateStore
   :: (Ord k,   Hashable k,
       Ord src, Hashable src,
       Ord dst, Hashable dst,
-      Ord tm,  Hashable tm) =>
-     CellKey k src dst tm st
-     -> SimpleCell k src dst tm st st' -> SimpleStore st -> st -> IO ()
-updateStore ck (SimpleCell (CellCore liveMap _tvarFStore) _ _pdir _rdir )  simpleSt st =  atomically $ stmInsert simpleSt
+      Ord tm,  Hashable tm,
+      SimpleCellState st,
+      k ~ SimpleCellKey st,
+      src ~ SimpleCellSrc st,
+      dst ~ SimpleCellDst st,
+      tm ~ SimpleCellDateTime st) =>
+     SimpleCell k src dst tm st st' -> SimpleStore st -> st -> IO ()
+updateStore (SimpleCell (CellCore liveMap _tvarFStore) _ _pdir _rdir )  simpleSt st =  atomically $ stmInsert simpleSt
    where 
+     ck = simpleCellKey
      stmInsert st' = do 
        M.insert st' (getKey ck st)  liveMap
 
 
-deleteStore  :: (Ord tm, Hashable tm ,
-                 Ord dst, Hashable dst, 
-                 Ord src, Hashable src , 
-                 Ord k, Hashable k) =>
-     CellKey k src dst tm st
-     -> SimpleCell k src dst tm t (SimpleStore CellKeyStore)
+deleteStore :: (Ord tm, Hashable tm ,
+                Ord dst, Hashable dst, 
+                Ord src, Hashable src , 
+                Ord k, Hashable k,
+                SimpleCellState st,
+                k ~ SimpleCellKey st,
+                src ~ SimpleCellSrc st,
+                dst ~ SimpleCellDst st,
+                tm ~ SimpleCellDateTime st) =>
+     SimpleCell k src dst tm t (SimpleStore CellKeyStore)
      -> st
      -> IO ()
 
-deleteStore ck (SimpleCell (CellCore liveMap tvarFStore) _ pdir rdir) st = do 
+deleteStore (SimpleCell (CellCore liveMap tvarFStore) _ pdir rdir) st = do 
   let targetStatePath = codeCellKeyFilename ck.getKey ck $ st 
   void $ atomically stmDelete
   fStore <- readTVarIO tvarFStore
@@ -220,14 +239,15 @@ deleteStore ck (SimpleCell (CellCore liveMap tvarFStore) _ pdir rdir) st = do
   np <- makeWorkingStatePath pdir rdir targetStatePath
   removeTree np
      where
+        ck = simpleCellKey
         stmDelete = do 
           M.delete (getKey ck st) liveMap
 
 
 storeFoldrWithKey
-  :: t6
-     -> SimpleCell t t1 t2 t3 t5 t4
-     -> (t6 -> DirectedKeyRaw t t1 t2 t3 -> t5 -> IO b -> IO b)
+  :: a
+     -> SimpleCell k src dst tm stlive stdormant
+     -> (a -> DirectedKeyRaw k src dst tm -> stlive -> IO b -> IO b)
      -> IO b
      -> IO b
 storeFoldrWithKey ck (SimpleCell (CellCore tlive _) _ _ _) fldFcn seed = do 
@@ -242,8 +262,8 @@ storeFoldrWithKey ck (SimpleCell (CellCore tlive _) _ _ _) fldFcn seed = do
 
 
 
-storeTraverseWithKey_ :: t5 -> SimpleCell t t1 t2 t3 t6 t4
-     -> (t5 -> DirectedKeyRaw t t1 t2 t3 -> t6 -> IO ())
+storeTraverseWithKey_ :: a -> SimpleCell k src dst tm stlive stdormant
+     -> (a -> DirectedKeyRaw k src dst tm -> stlive -> IO ())
      -> IO ()
 
 storeTraverseWithKey_ ck (SimpleCell (CellCore tlive _) _ _ _) tvFcn  = do 
@@ -256,7 +276,7 @@ storeTraverseWithKey_ ck (SimpleCell (CellCore tlive _) _ _ _) tvFcn  = do
 
 
 
-createCellCheckPointAndClose ::   SimpleCell t t1 t2 t3 st (SimpleStore CellKeyStore) -> IO ()
+createCellCheckPointAndClose ::   SimpleCell k src dst tm st (SimpleStore CellKeyStore) -> IO ()
 createCellCheckPointAndClose (SimpleCell (CellCore liveMap tvarFStore) _ _pdir _rdir ) = do 
   let listTMapWrapper = M.stream liveMap
   void $ ioTraverseListT_ (\(_,v) -> closeSimpleStore v )  listTMapWrapper
@@ -268,9 +288,14 @@ initializeSimpleCell :: (Data.Serialize.Serialize stlive ,
                          Ord tm, Hashable tm ,
                          Ord dst, Hashable dst ,
                          Ord src, Hashable src ,
-                         Ord k, Hashable k ) =>
-     CellKey k src dst tm stlive
-     -> stlive
+                         Ord k, Hashable k,
+                         SimpleCellState stlive,
+                         k ~ SimpleCellKey stlive,
+                         src ~ SimpleCellSrc stlive,
+                         dst ~ SimpleCellDst stlive,
+                         tm ~ SimpleCellDateTime stlive,
+                         Serialize stlive) =>
+     stlive
      -> Text
      -> IO
           (SimpleCell
@@ -280,7 +305,7 @@ initializeSimpleCell :: (Data.Serialize.Serialize stlive ,
              tm
              stlive
              (SimpleStore CellKeyStore))
-initializeSimpleCell ck emptyTargetState root = do 
+initializeSimpleCell emptyTargetState root = do 
  parentWorkingDir <- getWorkingDirectory
  let simpleRootPath = fromText root
      newWorkingDir = simpleRootPath
@@ -300,6 +325,7 @@ initializeSimpleCell ck emptyTargetState root = do
  tvarFAcid <- newTVarIO fAcidSt
  return $ SimpleCell (CellCore stateMap tvarFAcid) ck parentWorkingDir newWorkingDir
   where
+      ck = simpleCellKey
       traverseAndWait fp l = do
         aRes <- traverse (traverseLFcn fp) l
         traverse waitCatch aRes
