@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings, DeriveGeneric #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module TestImport where
 
@@ -88,6 +89,13 @@ instance Serialize Sample where
   get = getFromJSON
   put = putToJSON
 
+instance SimpleCellState Sample where
+  type SimpleCellKey      Sample = SampleKey
+  type SimpleCellSrc      Sample = SampleSrc
+  type SimpleCellDst      Sample = SampleDst
+  type SimpleCellDateTime Sample = SampleTime
+  simpleCellKey = sampleStoreCellKey
+
 initSample :: Sample
 initSample = Sample 0 
 
@@ -125,82 +133,14 @@ getKeyFcn :: Sample -> DirectedSampleKey
 getKeyFcn st = DKeyRaw (SampleKey . sampleInt $ st) sampleSrc sampleDst sampleTime
 
 
-
-
---- Simple Cell generation
-
-$(makeStoreCell 'sampleStoreCellKey 'initSample ''Sample)
-
--- | TH Defnitions
-
-getSampleSC :: SimpleCell
-                       SampleKey
-                       SampleSrc
-                       SampleDst
-                       SampleTime
-                       Sample
-                       (SimpleStore CellKeyStore)
-                     -> Sample -> IO (Maybe (SimpleStore Sample))
-
-
-updateSampleSC :: SimpleCell SampleKey SampleSrc SampleDst SampleTime Sample st'
-                        -> SimpleStore Sample -> Sample -> IO ()
-
-
-createCheckpointAndCloseSampleSC :: SimpleCell t t1 t2 t3 st (SimpleStore CellKeyStore)
-                                          -> IO ()
-                                          
-
-
-traverseWithKeySampleSC_ ::  SimpleCell t t1 t2 t3 t6 t4
-                                  -> (CellKey SampleKey SampleSrc SampleDst SampleTime Sample
-                                      -> DirectedKeyRaw t t1 t2 t3 -> t6 -> IO ())
-                                  -> IO ()
-
-
-insertSampleSC :: SimpleCell
-                          SampleKey
-                          SampleSrc
-                          SampleDst
-                          SampleTime
-                          Sample
-                          (SimpleStore CellKeyStore)
-                        -> Sample -> IO (SimpleStore Sample)
-
-deleteSampleSC ::  SimpleCell
-                          SampleKey
-                          SampleSrc
-                          SampleDst
-                          SampleTime
-                          t
-                          (SimpleStore CellKeyStore)
-                        -> Sample -> IO ()                                  
-
-foldlWithKeySampleSC :: SimpleCell t t1 t2 t3 t5 t4
-                              -> (CellKey SampleKey SampleSrc SampleDst SampleTime Sample
-                                  -> DirectedKeyRaw t t1 t2 t3 -> t5 -> IO b -> IO b)
-                              -> IO b
-                              -> IO b
-initializeSampleSC :: T.Text
-                            -> IO
-                                 (SimpleCell
-                                    SampleKey
-                                    SampleSrc
-                                    SampleDst
-                                    SampleTime
-                                    Sample
-                                    (SimpleStore CellKeyStore))
-
-
-
 runRestartTest :: [Int] -> IO [Int]
 runRestartTest i = do
   let sis = Sample <$> i
-  sc <- initializeSampleSC "testSampleCell"
-  void $ traverse (insertSampleSC sc ) sis
-  createCheckpointAndCloseSampleSC sc
-  sc' <- initializeSampleSC "testSampleCell"
-  storeSamples <- traverse (getSampleSC sc') sis
+  sc <- initializeSimpleCell initSample "testSampleCell"
+  void $ traverse (insertStore sc ) sis
+  createCellCheckPointAndClose sc
+  sc' <- initializeSimpleCell initSample "testSampleCell"
+  storeSamples <- traverse (getStore sc') sis
   samples <- traverse (traverse getSimpleStore) storeSamples
   return $ sampleInt <$> (catMaybes samples)
 
