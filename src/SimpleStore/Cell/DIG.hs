@@ -17,12 +17,6 @@
 
 module SimpleStore.Cell.DIG (
   initializeSimpleCell
-  , insertStore
-  , getStore
-  , updateStore
-  , deleteStore
-  , storeFoldrWithKey
-  , storeTraverseWithKey_
   , createCellCheckPointAndClose
   ) where
 
@@ -57,6 +51,8 @@ import           Data.Traversable
 import           SimpleStore.Cell.Internal (ioFoldRListT
                                            , ioTraverseListT_
                                            , ioFromList )
+import           SimpleStore.Cell.Types hiding (Cell(..))
+import qualified SimpleStore.Cell.Types as CT (Cell(..))
 -- import GHC.Generics
 import           Data.Serialize
 
@@ -84,7 +80,6 @@ import           Data.Text
 
 -- Component Libraries
 import           DirectedKeys.Types
-import           SimpleStore.Cell.Types
 import Data.Hashable
 import           SimpleStore
 
@@ -353,6 +348,24 @@ initializeSimpleCell emptyTargetState root = do
 openCKSt :: Serialize st =>
              FilePath -> st -> IO (Either StoreError (SimpleStore st))
 openCKSt fpKey _emptyTargetState = openSimpleStore fpKey
+
+instance (stdormant ~ SimpleStore CellKeyStore) => CT.Cell (SimpleCell k src dst tm stlive stdormant) where
+  type CellKeyType (SimpleCell k src dst tm stlive stdormant)          = k
+  type CellSrcType (SimpleCell k src dst tm stlive stdormant)          = src
+  type CellDstType (SimpleCell k src dst tm stlive stdormant)          = dst
+  type CellDateTimeType (SimpleCell k src dst tm stlive stdormant)     = tm
+  type CellLiveStateType (SimpleCell k src dst tm stlive stdormant)    = stlive
+  type CellDormantStateType (SimpleCell k src dst tm stlive stdormant) = stdormant
+  insertStore           = insertStore
+  getStore              = getStore
+  updateStore           = updateStore
+  deleteStore           = deleteStore
+  foldrStoreWithKey     = storeFoldrWithKey
+  traverseStoreWithKey_ = storeTraverseWithKey_
+   
+
+
+   
   
 -- -- | Exception and Error handling
 -- -- type AEither a = Either StoreCellErrora
