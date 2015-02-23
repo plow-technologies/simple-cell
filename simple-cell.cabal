@@ -20,7 +20,7 @@ Library
                         SimpleStore.Cell.DIG  
   Build-Depends:        
                         -- this should be kept exactly in sync with the package version
-                        simple-cell-types == 0.5.0 
+                        simple-cell-types == 0.6.0 
                       , base >= 4 && < 5
                       , simple-store >= 0.1.4
                       , text >= 1.1.0.1 && < 1.3
