@@ -51,7 +51,7 @@ Test-Suite spec
   Main-Is:              Spec.hs
   Build-Depends:
                         -- this should be kept exactly in sync with the package version
-                        simple-cell-types == 0.5.0 
+                        simple-cell-types == 0.6.0 
                       , base
                       , aeson
                       , aeson-serialize
