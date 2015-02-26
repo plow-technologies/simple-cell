@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings, NoImplicitPrelude #-}
 {-# LANGUAGE TypeFamilies,ScopedTypeVariables #-}
 {-# LANGUAGE BangPatterns #-}
-
+{-# LANGUAGE ConstraintKinds #-} -- For CellStateConstraint (from SimpleStore.Cell.Types)
 {-| 
 
     This module defines the types used in the Template haskell routine in order to automate the creation of a
@@ -139,16 +139,7 @@ insertSimpleCellPathFileKey st fk =  do
 
 -- | Warning, inserting a state that is already inserted throws an exception 
 
-insertStore :: (Ord k  , Hashable k ,
-                Ord src, Hashable src,
-                Ord dst, Hashable dst,
-                Ord tm , Hashable tm ,
-                SimpleCellState st,
-                k ~ SimpleCellKey st,
-                src ~ SimpleCellSrc st,
-                dst ~ SimpleCellDst st,
-                tm ~ SimpleCellDateTime st,
-                Serialize st) =>
+insertStore :: (CellStateConstraint k src dst tm st) =>
                 SimpleCell k src dst tm st (SimpleStore CellKeyStore)
                 -> st
                 -> IO (SimpleStore st)                     
@@ -171,16 +162,7 @@ insertStore (SimpleCell (CellCore liveMap tvarFStore) _ pdir rdir)  st = do
 --         liveMap <- readTVar tlive        
          M.insert st' (getKey ck st)  liveMap 
 
-getStore :: (Ord k, Hashable k,
-             Ord src, Hashable src,
-             Ord dst, Hashable dst,
-             Ord tm, Hashable tm,
-             SimpleCellState st,
-             k ~ SimpleCellKey st,
-             src ~ SimpleCellSrc st,
-             dst ~ SimpleCellDst st,
-             tm ~ SimpleCellDateTime st,
-             Serialize st) =>
+getStore :: (CellStateConstraint k src dst tm st) =>
              SimpleCell k src dst tm st (SimpleStore CellKeyStore)
              -> st
              -> IO (Maybe (SimpleStore st))
@@ -193,15 +175,7 @@ getStore sc st = atomically $ (M.lookup dkr) ( cellMap )
 
 
 updateStore
-  :: (Ord k,   Hashable k,
-      Ord src, Hashable src,
-      Ord dst, Hashable dst,
-      Ord tm,  Hashable tm,
-      SimpleCellState st,
-      k ~ SimpleCellKey st,
-      src ~ SimpleCellSrc st,
-      dst ~ SimpleCellDst st,
-      tm ~ SimpleCellDateTime st) =>
+  :: (CellStateConstraint k src dst tm st) =>
      SimpleCell k src dst tm st st' -> SimpleStore st -> st -> IO ()
 updateStore (SimpleCell (CellCore liveMap _tvarFStore) _ _pdir _rdir )  simpleSt st =  atomically $ stmInsert simpleSt
    where 
@@ -210,16 +184,8 @@ updateStore (SimpleCell (CellCore liveMap _tvarFStore) _ _pdir _rdir )  simpleSt
        M.insert st' (getKey ck st)  liveMap
 
 
-deleteStore :: (Ord tm, Hashable tm ,
-                Ord dst, Hashable dst, 
-                Ord src, Hashable src , 
-                Ord k, Hashable k,
-                SimpleCellState st,
-                k ~ SimpleCellKey st,
-                src ~ SimpleCellSrc st,
-                dst ~ SimpleCellDst st,
-                tm ~ SimpleCellDateTime st) =>
-     SimpleCell k src dst tm t (SimpleStore CellKeyStore)
+deleteStore :: (CellStateConstraint k src dst tm st) =>
+     SimpleCell k src dst tm st (SimpleStore CellKeyStore)
      -> st
      -> IO ()
 
@@ -240,12 +206,7 @@ deleteStore (SimpleCell (CellCore liveMap tvarFStore) _ pdir rdir) st = do
 
 
 storeFoldrWithKey
-  :: (SimpleCellState stlive,
-      k ~ SimpleCellKey stlive,
-      src ~ SimpleCellSrc stlive,
-      dst ~ SimpleCellDst stlive,
-      tm ~ SimpleCellDateTime stlive) =>
-
+  :: (CellStateConstraint k src dst tm stlive) =>
      SimpleCell k src dst tm stlive stdormant
      -> (CellKey k src dst tm stlive -> DirectedKeyRaw k src dst tm -> stlive -> IO b -> IO b)
      -> IO b
@@ -263,11 +224,7 @@ storeFoldrWithKey (SimpleCell (CellCore tlive _) _ _ _) fldFcn seed = do
 
 
 
-storeTraverseWithKey_ :: (SimpleCellState stlive,
-                          k ~ SimpleCellKey stlive,
-                          src ~ SimpleCellSrc stlive,
-                          dst ~ SimpleCellDst stlive,
-                          tm ~ SimpleCellDateTime stlive) =>
+storeTraverseWithKey_ :: (CellStateConstraint k src dst tm stlive) =>
      SimpleCell k src dst tm stlive stdormant
      -> (CellKey k src dst tm stlive -> DirectedKeyRaw k src dst tm -> stlive -> IO ())
      -> IO ()
@@ -291,8 +248,7 @@ createCellCheckPointAndClose (SimpleCell (CellCore liveMap tvarFStore) _ _pdir _
   void $ createCheckpoint fStore >> closeSimpleStore fStore
 
 
-initializeSimpleCell :: (Data.Serialize.Serialize stlive ,
-                         Ord tm, Hashable tm ,
+initializeSimpleCell :: (Ord tm, Hashable tm ,
                          Ord dst, Hashable dst ,
                          Ord src, Hashable src ,
                          Ord k, Hashable k,
@@ -349,11 +305,7 @@ openCKSt :: Serialize st =>
              FilePath -> st -> IO (Either StoreError (SimpleStore st))
 openCKSt fpKey _emptyTargetState = openSimpleStore fpKey
 
-instance (stdormant ~ SimpleStore CellKeyStore) => CT.Cell (SimpleCell k src dst tm stlive stdormant) where
-  type CellKeyType (SimpleCell k src dst tm stlive stdormant)          = k
-  type CellSrcType (SimpleCell k src dst tm stlive stdormant)          = src
-  type CellDstType (SimpleCell k src dst tm stlive stdormant)          = dst
-  type CellDateTimeType (SimpleCell k src dst tm stlive stdormant)     = tm
+instance (stdormant ~ SimpleStore CellKeyStore, CellStateConstraint k src dst tm stlive) => CT.Cell (SimpleCell k src dst tm stlive stdormant) where
   type CellLiveStateType (SimpleCell k src dst tm stlive stdormant)    = stlive
   type CellDormantStateType (SimpleCell k src dst tm stlive stdormant) = stdormant
   insertStore           = insertStore
