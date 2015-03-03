@@ -27,6 +27,8 @@ import           DirectedKeys.Types
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 
+import System.IO.Error (catchIOError)
+
 import Filesystem (removeTree)
 
 
@@ -139,7 +141,7 @@ getKeyFcn st = DKeyRaw (SampleKey . sampleInt $ st) sampleSrc sampleDst sampleTi
 
 runRestartTest :: [Int] -> IO (Either StoreError [Int])
 runRestartTest i = runEitherT $ do
-  liftIO $ removeTree "testSampleCell" 
+  liftIO $ catchIOError (removeTree "testSampleCell") (const $ return ())
   let sis = Sample <$> i
   sc <- EitherT $ initializeSimpleCell initSample "testSampleCell"
   void $ traverse (EitherT . insertStore sc ) sis
@@ -153,7 +155,7 @@ runRestartTest i = runEitherT $ do
   
 runDoubleInsertTest :: Int -> IO (Either StoreError Int)
 runDoubleInsertTest i = runEitherT $ do
-  liftIO $ removeTree "testSampleCell" 
+  liftIO $ catchIOError (removeTree "testSampleCell") (const $ return ())
   let sampleInt = Sample i
   testSampleCell <- EitherT $ initializeSimpleCell initSample "testSampleCell"
   void $ EitherT $ insertStore testSampleCell sampleInt
