@@ -15,6 +15,8 @@ import Control.Applicative ((<$>))
 import Data.Traversable (traverse)
 import Data.Maybe (catMaybes)
 import Control.Monad (void)
+import Control.Monad.Trans.Either
+import Control.Monad.IO.Class (liftIO)
 import Data.Hashable
 -- Needed for store creation
 import           SimpleStore
@@ -24,6 +26,8 @@ import           DirectedKeys.Types
 -- import DirectedKeys.Router
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
+
+import Filesystem (removeTree)
 
 
 
@@ -133,16 +137,25 @@ getKeyFcn :: Sample -> DirectedSampleKey
 getKeyFcn st = DKeyRaw (SampleKey . sampleInt $ st) sampleSrc sampleDst sampleTime
 
 
-runRestartTest :: [Int] -> IO [Int]
-runRestartTest i = do
+runRestartTest :: [Int] -> IO (Either StoreError [Int])
+runRestartTest i = runEitherT $ do
+  liftIO $ removeTree "testSampleCell" 
   let sis = Sample <$> i
-  sc <- initializeSimpleCell initSample "testSampleCell"
-  void $ traverse (insertStore sc ) sis
-  createCellCheckPointAndClose sc
-  sc' <- initializeSimpleCell initSample "testSampleCell"
-  storeSamples <- traverse (getStore sc') sis
-  samples <- traverse (traverse getSimpleStore) storeSamples
+  sc <- EitherT $ initializeSimpleCell initSample "testSampleCell"
+  void $ traverse (EitherT . insertStore sc ) sis
+  void $ liftIO $ createCellCheckPointAndClose sc
+  sc' <- EitherT $ initializeSimpleCell initSample "testSampleCell"
+  storeSamples <- liftIO $ traverse (getStore sc') sis
+  samples <- liftIO $ traverse (traverse getSimpleStore) storeSamples
+  void $ liftIO $ createCellCheckPointAndClose sc
   return $ sampleInt <$> (catMaybes samples)
 
-
   
+runDoubleInsertTest :: Int -> IO (Either StoreError Int)
+runDoubleInsertTest i = runEitherT $ do
+  liftIO $ removeTree "testSampleCell" 
+  let sampleInt = Sample i
+  testSampleCell <- EitherT $ initializeSimpleCell initSample "testSampleCell"
+  void $ EitherT $ insertStore testSampleCell sampleInt
+  void $ EitherT $ insertStore testSampleCell sampleInt
+  return i
