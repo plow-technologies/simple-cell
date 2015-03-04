@@ -2,7 +2,8 @@
 Simple Cell takes a filename generating function and a Serializeable datatype
 it then generates the machinery to handle the creation of multiple atomic values of this type according to the unique keys of each one.
 
-This avoids the write locking problem in Acid systems by using two separated data ideas for each piece.
+This allows the programmer to control at what level the write locks take place.
+
 
 
 ## Usage
