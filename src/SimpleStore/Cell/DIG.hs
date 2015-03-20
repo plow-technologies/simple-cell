@@ -300,8 +300,6 @@ instance (stdormant ~ SimpleStore CellKeyStore, CellStateConstraint k src dst tm
   getStore              = getStore
   updateStore           = updateStore
   deleteStore           = deleteStore
-  foldrStoreWithKey     = storeFoldrWithKey
-  traverseStoreWithKey_ = storeTraverseWithKey_
    
 
 
