@@ -94,6 +94,8 @@ newtype FileKey = FileKey { getFileKey :: Text} deriving (Show,Generic,Ord,Eq)
 instance ToJSON FileKey where
 instance FromJSON FileKey where
 
+
+
 instance Serialize FileKey where
   get = getFromJSON
   put = putToJSON
