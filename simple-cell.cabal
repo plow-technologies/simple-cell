@@ -1,5 +1,5 @@
 Name:                   simple-cell
-Version:                0.10.0
+Version:                0.10.1
 Author:                 Scott <scott.murphy@plowtech.net>
 Maintainer:             Scott <scott.murphy@plowtech.net>
 License:                BSD3
@@ -20,9 +20,9 @@ Library
                         SimpleStore.Cell.DIG  
   Build-Depends:        
                         -- this should be kept exactly in sync with the package version
-                        simple-cell-types == 0.10.0 
+                        simple-cell-types == 0.10.1
                       , base >= 4 && < 5
-                      , simple-store >= 0.2.0
+                      , simple-store == 0.2.0
                       , text >= 1.1.0.1 && < 1.3
                       , system-filepath >= 0.4.10
                       , system-fileio >= 0.3.12
@@ -53,7 +53,7 @@ Test-Suite spec
   Main-Is:              Spec.hs
   Build-Depends:
                         -- this should be kept exactly in sync with the package version
-                        simple-cell-types == 0.10.0 
+                        simple-cell-types 
                       , base
                       , aeson
                       , aeson-serialize
@@ -65,7 +65,7 @@ Test-Suite spec
                       , cereal 
                       , lens
                       , text >= 1.1.0.1
-                      , QuickCheck >= 2.7.6 && < 2.8.0
+                      , QuickCheck  
                       , stm-containers 
                       , hashable 
                       , list-t
