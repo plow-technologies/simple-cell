@@ -18,7 +18,7 @@
 module SimpleStore.Cell.DIG (
   initializeSimpleCell
   , createCellCheckPointAndClose
-  , storeFoldrWithkey
+  , storeFoldrWithKey
   , storeTraverseWithKey_   
   ) where
 
