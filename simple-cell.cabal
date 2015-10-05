@@ -1,5 +1,5 @@
 Name:                   simple-cell
-Version:                1.0.0
+Version:                1.0.1
 Author:                 Scott <scott.murphy@plowtech.net>
 Maintainer:             Scott <scott.murphy@plowtech.net>
 License:                BSD3
@@ -37,7 +37,7 @@ Library
                       , bytestring >= 0.10.0.2
                       , directed-keys >= 0.3.1
                       , async >= 2.0.0 && < 2.1.0
-                      , aeson >= 0.7.0 && < 0.9.0
+                      , aeson >= 0.7.0 && < 0.10.0.0
                       , aeson-serialize >= 0.0.0
                       , template-haskell 
                       , plow-extras-list >= 0.1.0 && < 0.2.0
