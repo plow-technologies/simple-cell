@@ -1,8 +1,8 @@
 {-# LANGUAGE NoImplicitPrelude   #-}
 {-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies        #-}
-
 {-|
 
     This module defines the types used in the Template haskell routine in order to automate the creation of a
@@ -188,17 +188,17 @@ getStore ck sc st = atomically $ (M.lookup dkr) ( cellMap )
 
 
 updateStore
-  :: (Ord k,   Hashable k,
-      Ord src, Hashable src,
-      Ord dst, Hashable dst,
-      Ord tm,  Hashable tm) =>
+  :: forall st k src dst tm st'.(Ord k,   Hashable k,
+                                 Ord src, Hashable src,
+                                 Ord dst, Hashable dst,
+                                 Ord tm,  Hashable tm) =>
      CellKey k src dst tm st
      -> SimpleCell k src dst tm st st' -> SimpleStore st -> st -> IO ()
 updateStore ck (SimpleCell (CellCore liveMap _tvarFStore) _ _pdir _rdir )  simpleSt st =  atomically $ stmInsert simpleSt
    where
      stmInsert :: SimpleStore st -> STM ()
      stmInsert simpleSt' = do
-       M.insert simpleSt' (getKey ck st)  liveMap
+       M.insert simpleSt' (getKey ck st) liveMap
 
 
 deleteStore  :: (Ord tm, Hashable tm ,
