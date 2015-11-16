@@ -3,6 +3,7 @@
 {-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies        #-}
+
 {-|
 
     This module defines the types used in the Template haskell routine in order to automate the creation of a
@@ -14,8 +15,6 @@
 
 |-}
 
-
-
 module SimpleStore.Cell.DIG (
   initializeSimpleCell
   , insertStore
@@ -26,10 +25,6 @@ module SimpleStore.Cell.DIG (
   , storeTraverseWithKey_
   , createCellCheckPointAndClose
   ) where
-
-
-
-
 
 -- -- System
 import           Filesystem
@@ -49,7 +44,6 @@ import           Control.Concurrent.STM
 
 import           Control.Concurrent.Async
 
-
 -- Typeclassesate
 
 import           Data.Foldable
@@ -59,7 +53,6 @@ import           SimpleStore.Cell.Internal (ioFoldRListT, ioFromList,
                                             ioTraverseListT_)
 -- import GHC.Generics
 import           Data.Serialize
-
 
 -- -- Component Libraries
 -- import DirectedKeys.Types
@@ -72,7 +65,6 @@ import           Data.Serialize
 -- ==================================================
 
 import qualified STMContainers.Map         as M
-
 
 -- ==================================================
 import qualified Data.Set                  as S
@@ -88,11 +80,8 @@ import           DirectedKeys.Types
 import           SimpleStore
 import           SimpleStore.Cell.Types
 
-
-
 emptyCellKeyStore :: CellKeyStore
 emptyCellKeyStore = CellKeyStore S.empty
-
 
 makeFileKey :: CellKey k src dst tm st -> st -> FileKey
 makeFileKey ck s = FileKey (codeCellKeyFilename ck . getKey ck $ s)
@@ -106,7 +95,7 @@ makeWorkingStatePath pdir rdir nsp = do
     void $ when (nsp == "") (fail "--> Cell key led to empty state path")
     return $ pdir </> rdir </> fromText nsp
 
--- |Cell Core interaction functions
+-- | Cell Core interaction functions
 -- The cell core is designed to be private... These accessors are used for other functions
 -- These Functions will be made into the Simple Core
 
@@ -123,7 +112,6 @@ deleteSimpleCellPathFileKey st fk = do
   putSimpleStore st (CellKeyStore (S.delete fk hsSet ))
   void $ createCheckpoint st
 
-
 -- |Note... This insert is repsert functional
 insertSimpleCellPathFileKey :: SimpleStore CellKeyStore -> FileKey ->  IO (SimpleStore CellKeyStore)
 insertSimpleCellPathFileKey st fk =  do
@@ -132,11 +120,8 @@ insertSimpleCellPathFileKey st fk =  do
   void $ createCheckpoint st
   return st
 
-
 -- getSimpleCellPathFileKey :: SimpleStore CellKeyStore -> IO CellKeyStore
 -- getSimpleCellPathFileKey = getSimpleStore
-
-
 
 -- | User Interface Defining Function
 
@@ -185,8 +170,6 @@ getStore ck sc st = atomically $ (M.lookup dkr) ( cellMap )
     dkr = getKey ck st
     cellMap = ccLive.cellCore $ sc
 
-
-
 updateStore
   :: forall st k src dst tm st'.(Ord k,   Hashable k,
                                  Ord src, Hashable src,
@@ -200,7 +183,6 @@ updateStore ck (SimpleCell (CellCore liveMap _tvarFStore) _ _pdir _rdir )  simpl
      stmInsert simpleSt' = do
        M.insert simpleSt' (getKey ck st) liveMap
 
-
 deleteStore  :: (Ord tm, Hashable tm ,
                  Ord dst, Hashable dst,
                  Ord src, Hashable src ,
@@ -209,7 +191,6 @@ deleteStore  :: (Ord tm, Hashable tm ,
      -> SimpleCell k src dst tm t (SimpleStore CellKeyStore)
      -> st
      -> IO ()
-
 deleteStore ck (SimpleCell (CellCore liveMap tvarFStore) _ pdir rdir) st = do
   let targetStatePath = codeCellKeyFilename ck.getKey ck $ st
   void $ atomically stmDelete
@@ -223,7 +204,6 @@ deleteStore ck (SimpleCell (CellCore liveMap tvarFStore) _ pdir rdir) st = do
      where
         stmDelete = do
           M.delete (getKey ck st) liveMap
-
 
 storeFoldrWithKey
   :: t6
@@ -241,8 +221,6 @@ storeFoldrWithKey ck (SimpleCell (CellCore tlive _) _ _ _) fldFcn seed = do
                            seed keyValueListT
   innerIO
 
-
-
 storeTraverseWithKey_ :: t5 -> SimpleCell t t1 t2 t3 t6 t4
      -> (t5 -> DirectedKeyRaw t t1 t2 t3 -> t6 -> IO ())
      -> IO ()
@@ -255,15 +233,12 @@ storeTraverseWithKey_ ck (SimpleCell (CellCore tlive _) _ _ _) tvFcn  = do
           where
             tvFcnWrp =  tvFcn ck
 
-
-
 createCellCheckPointAndClose ::   SimpleCell t t1 t2 t3 st (SimpleStore CellKeyStore) -> IO ()
 createCellCheckPointAndClose (SimpleCell (CellCore liveMap tvarFStore) _ _pdir _rdir ) = do
   let listTMapWrapper = M.stream liveMap
   void $ ioTraverseListT_ (\(_,v) -> closeSimpleStore v )  listTMapWrapper
   fStore <- readTVarIO tvarFStore
   void $ createCheckpoint fStore >> closeSimpleStore fStore
-
 
 initializeSimpleCell :: (Data.Serialize.Serialize stlive ,
                          Ord tm, Hashable tm ,
@@ -311,13 +286,9 @@ initializeSimpleCell ck emptyTargetState root = do
 --        print $ "opened: " ++ show fpKey
         return $ fmap (\st' -> (fkRaw, st')) est'
 
-
-
 openCKSt :: Serialize st =>
              FilePath -> st -> IO (Either StoreError (SimpleStore st))
 openCKSt fpKey _emptyTargetState = openSimpleStore fpKey
 
 -- -- | Exception and Error handling
 -- -- type AEither a = Either StoreCellErrora
-
-
