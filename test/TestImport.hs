@@ -181,7 +181,7 @@ foldlWithKeySampleSC :: SimpleCell t t1 t2 t3 t5 t4
                                   -> DirectedKeyRaw t t1 t2 t3 -> t5 -> IO b -> IO b)
                               -> IO b
                               -> IO b
-initializeSampleSC :: T.Text
+initializeSampleSC :: T.Text  
                             -> IO
                                  (SimpleCell
                                     SampleKey
@@ -196,12 +196,13 @@ initializeSampleSC :: T.Text
 runRestartTest :: [Int] -> IO [Int]
 runRestartTest i = do
   let sis = Sample <$> i
-  sc <- initializeSampleSC "testSampleCell"
+  sc <- initializeSampleSC "testSampleCell" 
   void $ traverse (insertSampleSC sc ) sis
   createCheckpointAndCloseSampleSC sc
-  sc' <- initializeSampleSC "testSampleCell"
+  sc' <- initializeSampleSC "testSampleCell" 
   storeSamples <- traverse (getSampleSC sc') sis
   samples <- traverse (traverse getSimpleStore) storeSamples
+  createCheckpointAndCloseSampleSC sc'
   return $ sampleInt <$> (catMaybes samples)
 
 

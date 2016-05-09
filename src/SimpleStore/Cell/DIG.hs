@@ -34,8 +34,8 @@ import           Filesystem.Path.CurrentOS hiding (root)
 import           Control.Applicative
 import           Control.Monad
 import           Data.Either
-import           Prelude                   (Ord, show, ($), (.), (==))
-import           System.IO                 (IO)
+import           Prelude                   (Ord, show, ($), (.), (==),Bool(..))
+import           System.IO                 (IO,hPutStrLn,stderr)
 
 -- import CorePrelude hiding (try,catch, finally)
 import           Control.Concurrent.STM
@@ -110,14 +110,14 @@ deleteSimpleCellPathFileKey :: SimpleStore CellKeyStore -> FileKey -> IO ()
 deleteSimpleCellPathFileKey st fk = do
   (CellKeyStore { getCellKeyStore = hsSet}) <- getSimpleStore st
   putSimpleStore st (CellKeyStore (S.delete fk hsSet ))
-  void $ createCheckpoint st
+  void $ createTwoCheckpoints st
 
 -- |Note... This insert is repsert functional
 insertSimpleCellPathFileKey :: SimpleStore CellKeyStore -> FileKey ->  IO (SimpleStore CellKeyStore)
 insertSimpleCellPathFileKey st fk =  do
   (CellKeyStore { getCellKeyStore = hsSet}) <- getSimpleStore st
   putSimpleStore st  $ CellKeyStore (S.insert  fk hsSet )
-  void $ createCheckpoint st
+  void $ createTwoCheckpoints st
   return st
 
 -- getSimpleCellPathFileKey :: SimpleStore CellKeyStore -> IO CellKeyStore
@@ -143,7 +143,7 @@ insertStore ck (SimpleCell (CellCore liveMap tvarFStore) _ pdir rdir)  st = do
   fullStatePath <- makeWorkingStatePath pdir rdir newStatePath
   let fk = makeFileKey ck st
   fStore <- readTVarIO tvarFStore
-  void $ insertSimpleCellPathFileKey fStore fk
+  void $ insertSimpleCellPathFileKey fStore fk  
   eSimpleStore <- makeSimpleStore fullStatePath st
   case eSimpleStore of
     Left e -> deleteSimpleCellPathFileKey fStore fk >> (fail.show $ e)
@@ -197,7 +197,7 @@ deleteStore ck (SimpleCell (CellCore liveMap tvarFStore) _ pdir rdir) st = do
   fStore <- readTVarIO tvarFStore
   let fk = makeFileKey ck st
   void $ deleteSimpleCellPathFileKey fStore fk
-  void $ createCheckpoint fStore
+  void $ createTwoCheckpoints fStore
   atomically $ writeTVar tvarFStore fStore
   np <- makeWorkingStatePath pdir rdir targetStatePath
   removeTree np
@@ -238,7 +238,7 @@ createCellCheckPointAndClose (SimpleCell (CellCore liveMap tvarFStore) _ _pdir _
   let listTMapWrapper = M.stream liveMap
   void $ ioTraverseListT_ (\(_,v) -> closeSimpleStore v )  listTMapWrapper
   fStore <- readTVarIO tvarFStore
-  void $ createCheckpoint fStore >> closeSimpleStore fStore
+  void $ createTwoCheckpoints fStore >> closeSimpleStore fStore
 
 initializeSimpleCell :: (Data.Serialize.Serialize stlive ,
                          Ord tm, Hashable tm ,
@@ -256,16 +256,22 @@ initializeSimpleCell :: (Data.Serialize.Serialize stlive ,
              tm
              stlive
              (SimpleStore CellKeyStore))
-initializeSimpleCell ck emptyTargetState root = do
+initializeSimpleCell ck emptyTargetState root  = do
  parentWorkingDir <- getWorkingDirectory
  let simpleRootPath = fromText root
      newWorkingDir = simpleRootPath
      fpr           = parentWorkingDir </> simpleRootPath
-
- fAcidSt <- openSimpleStore  fpr  >>= either (\_ -> do
-                                                      eCellKeyStore <- makeSimpleStore fpr emptyCellKeyStore
-                                                      either (\_ -> fail "cellKey won't initialize" ) return  eCellKeyStore
-                                                  ) return  ::  IO (SimpleStore CellKeyStore)
+ 
+ fAcidSt <- openSimpleStore fpr  >>= either (\e -> do 
+                                                       hPutStrLn stderr (show e)
+                                                       if shouldInitializeFail e
+                                                       then do 
+                                                           hPutStrLn stderr (show e)
+                                                           eCellKeyStore <- makeSimpleStore fpr emptyCellKeyStore
+                                                           either (\_ -> fail "cellKey won't initialize" ) return  eCellKeyStore
+                                                       else
+                                                           fail "data appears corrupted"
+                                                   ) return  ::  IO (SimpleStore CellKeyStore)
  fkSet   <-  getCellKeyStore <$>  getSimpleStore fAcidSt :: IO (S.Set FileKey)
 
  let setEitherFileKeyRaw = S.map (unmakeFileKey ck) fkSet
@@ -291,4 +297,11 @@ openCKSt :: Serialize st =>
 openCKSt fpKey _emptyTargetState = openSimpleStore fpKey
 
 -- -- | Exception and Error handling
--- -- type AEither a = Either StoreCellErrora
+-- should the initialize wipe the state or fail.
+shouldInitializeFail :: StoreError -> Bool
+shouldInitializeFail  StoreFolderNotFound = True
+shouldInitializeFail  _ = False
+
+
+createTwoCheckpoints  :: Serialize st => SimpleStore st -> IO (Either StoreError ())
+createTwoCheckpoints fStore = (createCheckpoint fStore) >> (createCheckpoint fStore)
