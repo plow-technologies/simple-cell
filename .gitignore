@@ -11,3 +11,4 @@ cabal.sandbox.config
 /testSampleCell/
 /src/SimpleStore/Cell/#Internal.hs#
 /src/SimpleStore/Cell/DIG_flymake.hs
+TAGS
