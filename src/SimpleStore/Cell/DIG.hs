@@ -238,7 +238,7 @@ createCellCheckPointAndClose (SimpleCell (CellCore liveMap tvarFStore) _ _pdir _
   let listTMapWrapper = M.stream liveMap
   void $ ioTraverseListT_ (\(_,v) -> closeSimpleStore v )  listTMapWrapper
   fStore <- readTVarIO tvarFStore
-  void $ createTwoCheckpoints fStore >> closeSimpleStore fStore
+  void $ createCheckpoint fStore >> closeSimpleStore fStore
 
 initializeSimpleCell :: (Data.Serialize.Serialize stlive ,
                          Ord tm, Hashable tm ,
