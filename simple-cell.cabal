@@ -60,7 +60,7 @@ Test-Suite spec
                       , cereal 
                       , lens 
                       , text >= 1.1.0.1
-                      , QuickCheck >= 2.7.6 && < 2.8.0
+                      , QuickCheck >= 2.7.6
                       , stm-containers 
                       , hashable 
                       , list-t
