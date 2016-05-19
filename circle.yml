@@ -1,4 +1,9 @@
 machine:
+  pre:
+    - sudo apt-get update
+    - sudo apt-get install gcc-4.8
+    - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 90
+    - gcc --version
   ghc:
     version: 7.10.1
 
