@@ -34,7 +34,7 @@ import           Filesystem.Path.CurrentOS hiding (root)
 import           Control.Applicative
 import           Control.Monad
 import           Data.Either
-import           Prelude                   (Ord, show, ($), (.), (==),Bool(..))
+import           Prelude                   (Ord, show, ($), (.), (==),Bool(..),putStrLn)
 import           System.IO                 (IO,hPutStrLn,stderr)
 
 -- import CorePrelude hiding (try,catch, finally)
@@ -170,13 +170,13 @@ getStore ck sc st = atomically $ (M.lookup dkr) ( cellMap )
     dkr = getKey ck st
     cellMap = ccLive.cellCore $ sc
 
-updateStore
-  :: forall st k src dst tm st'.(Ord k,   Hashable k,
-                                 Ord src, Hashable src,
-                                 Ord dst, Hashable dst,
-                                 Ord tm,  Hashable tm) =>
-     CellKey k src dst tm st
-     -> SimpleCell k src dst tm st st' -> SimpleStore st -> st -> IO ()
+
+updateStore :: forall st k src dst tm st'.(Ord k,   Hashable k,
+                                Ord src, Hashable src,
+                                Ord dst, Hashable dst,
+                                Ord tm,  Hashable tm) =>
+                                CellKey k src dst tm st
+                               -> SimpleCell k src dst tm st st' -> SimpleStore st -> st -> IO ()
 updateStore ck (SimpleCell (CellCore liveMap _tvarFStore) _ _pdir _rdir )  simpleSt st =  atomically $ stmInsert simpleSt
    where
      stmInsert :: SimpleStore st -> STM ()
@@ -261,7 +261,7 @@ initializeSimpleCell ck emptyTargetState root  = do
  let simpleRootPath = fromText root
      newWorkingDir = simpleRootPath
      fpr           = parentWorkingDir </> simpleRootPath
- 
+ putStrLn "opening simple-cell"
  fAcidSt <- openSimpleStore fpr  >>= either (\e -> do 
                                                        hPutStrLn stderr (show e)
                                                        if shouldInitializeFail e
@@ -272,14 +272,19 @@ initializeSimpleCell ck emptyTargetState root  = do
                                                        else
                                                            fail "data appears corrupted"
                                                    ) return  ::  IO (SimpleStore CellKeyStore)
+ putStrLn "getting Key"                                                  
  fkSet   <-  getCellKeyStore <$>  getSimpleStore fAcidSt :: IO (S.Set FileKey)
 
  let setEitherFileKeyRaw = S.map (unmakeFileKey ck) fkSet
  let groupedList = groupUp 16 (rights . S.toList $ setEitherFileKeyRaw)
+ putStrLn "traverse and wait"
  aStateList <- traverse (traverseAndWait fpr) groupedList
  let stateList =  rights.rights $ Data.Foldable.concat aStateList
+ putStrLn "state list"
  stateMap <-  ioFromList stateList
+ putStrLn "fAcidState"
  tvarFAcid <- newTVarIO fAcidSt
+ putStrLn "return"
  return $ SimpleCell (CellCore stateMap tvarFAcid) ck parentWorkingDir newWorkingDir
   where
       traverseAndWait fp l = do

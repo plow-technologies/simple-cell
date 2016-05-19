@@ -192,16 +192,39 @@ initializeSampleSC :: T.Text
                                     (SimpleStore CellKeyStore))
 
 
+getOrInsertSampleSC
+  :: SimpleCell
+       SampleKey
+       SampleSrc
+       SampleDst
+       SampleTime
+       Sample
+       (SimpleStore CellKeyStore)
+     -> Sample -> IO (SimpleStore Sample)
+getOrInsertSampleSC sc si = do
+  maybeVal <- getSampleSC sc si
+  case maybeVal of
+    (Just val) -> return val
+    Nothing -> insertSampleSC sc si
+
+
 
 runRestartTest :: [Int] -> IO [Int]
 runRestartTest i = do
   let sis = Sample <$> i
-  sc <- initializeSampleSC "testSampleCell" 
-  void $ traverse (insertSampleSC sc ) sis
+  putStrLn "init first time"
+  sc <- initializeSampleSC "testSampleCell"
+  putStrLn "traverse given list"
+  void $ traverse (getOrInsertSampleSC sc ) sis
+  putStrLn "first checkpiont and close"
   createCheckpointAndCloseSampleSC sc
-  sc' <- initializeSampleSC "testSampleCell" 
+  putStrLn "init second time"
+  sc' <- initializeSampleSC "testSampleCell"
+  putStrLn "list em"
   storeSamples <- traverse (getSampleSC sc') sis
+  putStrLn "store em"
   samples <- traverse (traverse getSimpleStore) storeSamples
+  putStrLn "checkpoint"
   createCheckpointAndCloseSampleSC sc'
   return $ sampleInt <$> (catMaybes samples)
 
