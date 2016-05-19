@@ -5,7 +5,7 @@ machine:
     - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 90
     - gcc --version
   ghc:
-    version: 7.10.1
+    version: 7.10.2
 
   environment:
     PATH: $HOME/.cabal/bin:$CIRCLE_ARTIFACTS:$PATH/$HOME/simple-cell/.cabal-sandbox/bin
@@ -21,13 +21,13 @@ dependencies:
     - cp plow-scripts/config $HOME/.cabal/config
     - cabal update
     - cabal sandbox init
-    - cabal install   --only-dependencies --enable-tests -j1
+    - cabal install   --only-dependencies --enable-tests -j2
     - if [ "$CIRCLE_BRANCH" == "production" ]; then yesod configure && echo "configuring for production build"; else cabal configure -fdev && echo "configuring non-production build"; fi
 
 test:
   override:
     - cabal configure
-    - cabal build -j1:
+    - cabal build -j2:
         timeout: 3000
     - cabal test --show-details=always -j2:
         timeout: 3000
