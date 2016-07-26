@@ -36,9 +36,12 @@ Again for a worked example [look at the tests](https://github.com/plow-technolog
 ## SimpleCell Workflow
 
 1. Generate your functions
+
 2. initialize the store in IO
+
 3. Either pass the cell as an argument to any needed function or derive some other method of getting a global cell (ReaderT 
    for instance).
+   
 4. make inserts with `insert<YourType>SC` 
 5. batch operations are done with `foldlWithKeySampleSC`
 6. getStores out of the Cell with getSampleSC.  Use a dummy value to grab something by key
@@ -52,14 +55,12 @@ awayServerExample :: SampleStoreCell ->  Application
 awayServerExample ... -- Some servant app
 
 -- Some example routines
-
 queryParamH :: SampleStoreCell -> Int -> EitherT ServantErr IO SampleStoreCell
 queryParamH cell key = do
   maybeSample <- liftIO $ getSampleStoreSC cell (SampleStore key Nothing)
   case maybeSample of
     Nothing -> sendError "sample not found"
     (Just s) -> return s
-
 
 
 repsertParamH :: SampleStoreCell -> Sample -> Int -> Either ServantErr IO ()
@@ -70,13 +71,9 @@ repsertParamH cell sample key = do
     (Just store) -> modifySimpleStore (\_ -> (SampleStore key sample) ) store >>
                     createCheckpoint store
   
-
-
 main = do
   cell <- initializeSampleSC "testSampleStoreCell" 
   serve $ awayServerExample cell
-
-
 
 
 ```
