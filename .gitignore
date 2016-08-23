@@ -13,3 +13,5 @@ cabal.sandbox.config
 /src/SimpleStore/Cell/DIG_flymake.hs
 TAGS
 TAGS
+./.stack-work
+.stack-work
