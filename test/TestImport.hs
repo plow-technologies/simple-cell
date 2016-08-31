@@ -6,15 +6,13 @@ module TestImport where
 
 import           Data.Aeson
 import           GHC.Generics
-
 import           Data.Serialize
 import           Data.Aeson.Serialize
-
-import Control.Applicative ((<$>))
-import Data.Traversable (traverse)
-import Data.Maybe (catMaybes)
-import Control.Monad (void)
-import Data.Hashable
+import           Control.Applicative        ((<$>))
+import           Data.Traversable           (traverse)
+import           Data.Maybe                 (catMaybes)
+import           Control.Monad              (void)
+import           Data.Hashable
 -- Needed for store creation
 import           SimpleStore
 import           SimpleStore.Cell
@@ -202,10 +200,11 @@ getOrInsertSampleSC
        (SimpleStore CellKeyStore)
      -> Sample -> IO (SimpleStore Sample)
 getOrInsertSampleSC sc si = do
+
   maybeVal <- getSampleSC sc si
   case maybeVal of
-    (Just val) -> return val
-    Nothing -> insertSampleSC sc si
+    (Just st) -> createCheckpoint st >> return st
+    Nothing -> insertSampleSC sc si >>= (\st -> createCheckpoint st >> return st)
 
 
 
