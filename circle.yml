@@ -24,11 +24,11 @@ dependencies:
     - cd ~ && git clone git@github.com:plow-technologies/plow-scripts.git
     - stack setup
     - stack install hscolour
-    - stack build --only-dependencies
+    - stack --haddock build --only-dependencies
 
 test:
   override:
-    - stack build
+    - stack --haddock build
 
 # Comment this section below if you don't want to upload to hackage
 deployment:
