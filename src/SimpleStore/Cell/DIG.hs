@@ -374,4 +374,4 @@ shouldInitializeFail  _                 = False
 
 
 createTwoCheckpoints  :: Serialize st => SimpleStore st -> IO (Either StoreError ())
-createTwoCheckpoints fStore = (createCheckpoint fStore) >> (createCheckpoint fStore)
+createTwoCheckpoints fStore = (createCheckpointImmediate fStore) >> (createCheckpointImmediate fStore)
