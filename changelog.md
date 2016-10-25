@@ -1,4 +1,3 @@
-
 Version:                2.2.2
 + bump simple store 2.0.3
 + change checkpoint out to immediate
