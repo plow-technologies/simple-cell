@@ -27,32 +27,32 @@ module SimpleStore.Cell.DIG (
   ) where
 
 -- System
-import           Filesystem
+import           Filesystem (removeTree,getWorkingDirectory)
 import           Filesystem.Path.CurrentOS hiding (root)
 
 -- Controls
-import           Control.Applicative
-import           Control.Monad
-import           Data.Either
-import           Prelude                   (Ord, show, ($), (.), (==),Bool(..),putStrLn)
+import           Data.Bifunctor (first)
+import           Control.Applicative ((<$>),(*>))
+import           Control.Monad (Functor,Monad,void,when,fail,return,(>>=),fmap,(>>))
+import           Data.Either (either,Either,rights,lefts)
+import           Prelude                   (Ord, show, ($), (.), (==),Bool(..),putStrLn,unwords,print,(++))
 import           System.IO                 (IO,hPutStrLn,stderr)
 
--- import CorePrelude hiding (try,catch, finally)
-import           Control.Concurrent.STM
--- import Control.Monad.Reader ( ask )
--- import Control.Monad.State
 
-import           Control.Concurrent.Async
+import           Control.Concurrent.STM (readTVarIO,atomically,writeTVar,STM,newTVarIO)
+
+import           Control.Concurrent.Async (wait,async)
 
 -- Typeclassesate
 
-import           Data.Foldable
-import           Data.Maybe
-import           Data.Traversable
+import           Data.Foldable (concat)
+import           Data.Maybe (Maybe(..))
+import           Data.Traversable (traverse)
+
 import           SimpleStore.Cell.Internal (ioFoldRListT, ioFromList,
                                             ioTraverseListT_)
 -- import GHC.Generics
-import           Data.Serialize
+import           Data.Serialize (Serialize)
 
 
 
@@ -67,16 +67,28 @@ import qualified STMContainers.Map         as M
 -- ==================================================
 import qualified Data.Set                  as S
 
-import           Plow.Extras.List
+import           Plow.Extras.List (groupUp)
 -- -- Strings /Monomorphs
 
-import           Data.Text
+import           Data.Text (Text)
 
 -- Component Libraries
-import           Data.Hashable
-import           DirectedKeys.Types
-import           SimpleStore
-import           SimpleStore.Cell.Types
+import           Data.Hashable (Hashable)
+import           DirectedKeys.Types (DirectedKeyRaw)
+import           SimpleStore (SimpleStore
+                             ,getSimpleStore
+                             ,putSimpleStore
+                             ,makeSimpleStore
+                             ,openSimpleStore
+                             ,createCheckpointImmediate
+                             ,createCheckpoint
+                             ,StoreError(..)
+                             )
+import           SimpleStore.Cell.Types (CellKey(..)
+                                        ,CellKeyStore(..)
+                                        ,FileKey(..)
+                                        ,SimpleCell(..)
+                                        ,CellCore(..))
 
 
 
@@ -284,15 +296,12 @@ storeTraverseWithKey_ ck (SimpleCell (CellCore tlive _) _ _ _) tvFcn  = do
             
 
 
+-- SimpleCell k src dst tm st st'
 
-
-createCellCheckPointAndClose ::   SimpleCell t t1 t2 t3 st (SimpleStore CellKeyStore) -> IO ()
-createCellCheckPointAndClose (SimpleCell (CellCore liveMap tvarFStore) _ _pdir _rdir ) = do  
-  void $ ioTraverseListT_ (\(_,v) -> closeSimpleStore v )  listTMapWrapper
+createCellCheckPointAndClose :: forall k src dst tm st .  SimpleCell k src dst tm st (SimpleStore CellKeyStore) -> IO ()
+createCellCheckPointAndClose (SimpleCell (CellCore _ tvarFStore) _ _pdir _rdir ) = do  
   fStore <- readTVarIO tvarFStore
-  void $ createCheckpoint fStore >> closeSimpleStore fStore
-  where
-    listTMapWrapper = M.stream liveMap
+  void $ createCheckpointImmediate fStore 
 
 
 
@@ -319,43 +328,47 @@ initializeSimpleCell :: (Data.Serialize.Serialize stlive ,
              (SimpleStore CellKeyStore))
 initializeSimpleCell ck emptyTargetState root  = do
  parentWorkingDir <- getWorkingDirectory
- let simpleRootPath = fromText root
-     newWorkingDir  = simpleRootPath
-     fpr            = parentWorkingDir </> simpleRootPath
+ let fpr            = parentWorkingDir </> simpleRootPath
  putStrLn "opening simple-cell"
- fAcidSt <- openSimpleStore fpr  >>= either (\e -> do 
-                                                       hPutStrLn stderr (show e)
-                                                       if shouldInitializeFail e
-                                                       then do 
-                                                           hPutStrLn stderr (show e)
-                                                           eCellKeyStore <- makeSimpleStore fpr emptyCellKeyStore
-                                                           either (\_ -> fail "cellKey won't initialize" ) return  eCellKeyStore
-                                                       else
-                                                           fail "data appears corrupted"
-                                                   ) return  ::  IO (SimpleStore CellKeyStore)
+ simpleStoreState <- openSimpleStore fpr  >>= either (\e -> do 
+                                                                      hPutStrLn stderr (show e)
+                                                                      if shouldInitializeFail e
+                                                                      then do 
+                                                                          hPutStrLn stderr (show e)
+                                                                          eCellKeyStore <- makeSimpleStore fpr emptyCellKeyStore
+                                                                          either (\_ -> fail "cellKey won't initialize" ) return  eCellKeyStore
+                                                                      else
+                                                                          fail "data appears corrupted"
+                                                                  ) return  ::  IO (SimpleStore CellKeyStore)
  putStrLn "getting Key"                                                  
- fkSet   <-  getCellKeyStore <$>  getSimpleStore fAcidSt :: IO (S.Set FileKey)
+ fkSet   <-  getCellKeyStore <$>  getSimpleStore simpleStoreState :: IO (S.Set FileKey)
 
  let setEitherFileKeyRaw = S.map (unmakeFileKey ck) fkSet
- let groupedList = groupUp 16 (rights . S.toList $ setEitherFileKeyRaw)
+ let groupedList = groupUp 16 (rights . S.toList $ setEitherFileKeyRaw) 
  putStrLn "traverse and wait"
- aStateList <- traverse (traverseAndWait fpr) groupedList
- let stateList =  rights.rights $ Data.Foldable.concat aStateList
+ aStateList <- traverse (traverseAndWait fpr) groupedList 
+ let
+  eitherStateList = Data.Foldable.concat aStateList 
+  stateList  =  rights  eitherStateList
+  errorList  =  unwords . lefts . fmap (first show) $ eitherStateList
+ hPutStrLn stderr errorList
  putStrLn "state list"
  stateMap <-  ioFromList stateList
  putStrLn "fAcidState"
- tvarFAcid <- newTVarIO fAcidSt
+ tvarFAcid <- newTVarIO simpleStoreState
  putStrLn "return"
  return $ SimpleCell (CellCore stateMap tvarFAcid) ck parentWorkingDir newWorkingDir
   where
+      newWorkingDir  = simpleRootPath
+      simpleRootPath = fromText root
       traverseAndWait fp l = do
         aRes <- traverse (traverseLFcn fp) l
-        traverse waitCatch aRes
+        traverse wait aRes
       traverseLFcn  fp fkRaw = async $ traverseLFcn' fp fkRaw
       traverseLFcn' fp fkRaw = do
         let fpKey = fp </> (fromText . codeCellKeyFilename ck $ fkRaw)
         est' <- openCKSt fpKey emptyTargetState
---        print $ "opened: " ++ show fpKey
+        print $ "opened: " ++ show fpKey
         return $ fmap (\st' -> (fkRaw, st')) est'
 
 
@@ -369,8 +382,8 @@ openCKSt fpKey _emptyTargetState = openSimpleStore fpKey
 -- -- | Exception and Error handling
 -- should the initialize wipe the state or fail.
 shouldInitializeFail :: StoreError -> Bool
-shouldInitializeFail  StoreFolderNotFound = True
-shouldInitializeFail  _                 = False
+shouldInitializeFail  StoreFolderNotFound  = True
+shouldInitializeFail  _                     = False
 
 
 createTwoCheckpoints  :: Serialize st => SimpleStore st -> IO (Either StoreError ())

@@ -1,4 +1,5 @@
-
+Version:                2.3.1
++ Dropped exception handling on init load  
 Version:                2.3.0
 + bump simple store to 2.1.0
 Version:                2.2.2
