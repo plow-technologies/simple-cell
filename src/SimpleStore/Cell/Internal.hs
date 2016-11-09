@@ -10,19 +10,18 @@ module SimpleStore.Cell.Internal
 
 
 import           Control.Concurrent.STM
+import           ListT (ListT)
 import qualified ListT
 import qualified STMContainers.Map as M
 
 import Data.Foldable
-ioFoldRListT :: ListT.MonadTransUncons t =>
-       (a -> b -> b) -> b -> t STM a -> IO b
-ioFoldRListT fcn !seed lst = ioFoldRListT' fcn (return seed) lst 
+ioFoldRListT :: (a -> b -> b) -> b -> ListT STM a -> IO b
+ioFoldRListT fcn !seed lst = ioFoldRListT' fcn (return seed) lst		  
+
+ioFoldRListT' :: (a -> b -> b) -> IO b -> ListT STM a -> IO b 
 
 
 
-ioFoldRListT'
-  :: ListT.MonadTransUncons t =>
-     (a -> b -> b) -> IO b -> t STM a -> IO b
 ioFoldRListT' fcn !iseed lst = do 
   (ma,mlst) <- atomically $ do
                    ma <- ListT.head lst 
@@ -38,15 +37,11 @@ ioFoldRListT' fcn !iseed lst = do
 
 
 
-ioTraverseListT_ :: ListT.MonadTransUncons t =>
-                                           (a -> IO b) ->  
-                                           t STM a -> 
-                                           IO ()
+ioTraverseListT_ :: (a -> IO b) -> ListT STM a -> IO ()
 ioTraverseListT_ fcn stmA = ioTraverseListT_' fcn stmA 
 
 
-ioTraverseListT_'
-  :: ListT.MonadTransUncons t => (a -> IO a1) -> t STM a -> IO ()
+ioTraverseListT_' :: (a -> IO a1) -> ListT STM a -> IO ()
 ioTraverseListT_' fcn stmListT = do 
           (ma, mlst) <- atomically $ do
                           ma <- ListT.head stmListT
