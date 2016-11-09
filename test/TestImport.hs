@@ -6,15 +6,13 @@ module TestImport where
 
 import           Data.Aeson
 import           GHC.Generics
-
 import           Data.Serialize
 import           Data.Aeson.Serialize
-
-import Control.Applicative ((<$>))
-import Data.Traversable (traverse)
-import Data.Maybe (catMaybes)
-import Control.Monad (void)
-import Data.Hashable
+import           Control.Applicative        ((<$>))
+import           Data.Traversable           (traverse)
+import           Data.Maybe                 (catMaybes)
+import           Control.Monad              (void)
+import           Data.Hashable
 -- Needed for store creation
 import           SimpleStore
 import           SimpleStore.Cell

@@ -286,13 +286,11 @@ storeTraverseWithKey_ ck (SimpleCell (CellCore tlive _) _ _ _) tvFcn  = do
 
 
 
-createCellCheckPointAndClose ::   SimpleCell t t1 t2 t3 st (SimpleStore CellKeyStore) -> IO ()
-createCellCheckPointAndClose (SimpleCell (CellCore liveMap tvarFStore) _ _pdir _rdir ) = do  
-  void $ ioTraverseListT_ (\(_,v) -> closeSimpleStore v )  listTMapWrapper
+createCellCheckPointAndClose :: (SimpleCell k src dst tm st (SimpleStore CellKeyStore))   -> IO ()
+createCellCheckPointAndClose    (SimpleCell (CellCore liveMap tvarFStore) _ _pdir _rdir ) =  do  
   fStore <- readTVarIO tvarFStore
-  void $ createCheckpoint fStore >> closeSimpleStore fStore
-  where
-    listTMapWrapper = M.stream liveMap
+  void (createCheckpoint fStore)
+
 
 
 
@@ -309,30 +307,29 @@ initializeSimpleCell :: (Data.Serialize.Serialize stlive ,
      CellKey k src dst tm stlive
      -> stlive
      -> Text
-     -> IO
-          (SimpleCell
-             k
-             src
-             dst
-             tm
-             stlive
-             (SimpleStore CellKeyStore))
+     -> IO (SimpleCell k
+                       src
+                       dst
+                       tm
+                       stlive
+                       (SimpleStore CellKeyStore))
+
 initializeSimpleCell ck emptyTargetState root  = do
- parentWorkingDir <- getWorkingDirectory
+ parentWorkingDir   <- getWorkingDirectory
  let simpleRootPath = fromText root
      newWorkingDir  = simpleRootPath
      fpr            = parentWorkingDir </> simpleRootPath
  putStrLn "opening simple-cell"
  fAcidSt <- openSimpleStore fpr  >>= either (\e -> do 
-                                                       hPutStrLn stderr (show e)
-                                                       if shouldInitializeFail e
-                                                       then do 
-                                                           hPutStrLn stderr (show e)
-                                                           eCellKeyStore <- makeSimpleStore fpr emptyCellKeyStore
-                                                           either (\_ -> fail "cellKey won't initialize" ) return  eCellKeyStore
-                                                       else
-                                                           fail "data appears corrupted"
-                                                   ) return  ::  IO (SimpleStore CellKeyStore)
+                  hPutStrLn stderr (show e)
+                  if shouldInitializeFail e
+                  then do 
+                      hPutStrLn stderr (show e)
+                      eCellKeyStore <- makeSimpleStore fpr emptyCellKeyStore
+                      either (\_ -> fail "cellKey won't initialize" ) return  eCellKeyStore
+                  else
+                      fail "data appears corrupted"
+              ) return  ::  IO (SimpleStore CellKeyStore)
  putStrLn "getting Key"                                                  
  fkSet   <-  getCellKeyStore <$>  getSimpleStore fAcidSt :: IO (S.Set FileKey)
 
