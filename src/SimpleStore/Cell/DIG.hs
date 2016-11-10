@@ -287,7 +287,7 @@ storeTraverseWithKey_ ck (SimpleCell (CellCore tlive _) _ _ _) tvFcn  = do
 
 
 createCellCheckPointAndClose :: (SimpleCell k src dst tm st (SimpleStore CellKeyStore))   -> IO ()
-createCellCheckPointAndClose    (SimpleCell (CellCore liveMap tvarFStore) _ _pdir _rdir ) =  do  
+createCellCheckPointAndClose    (SimpleCell (CellCore _ tvarFStore) _ _pdir _rdir ) =  do  
   fStore <- readTVarIO tvarFStore
   void (createCheckpoint fStore)
 

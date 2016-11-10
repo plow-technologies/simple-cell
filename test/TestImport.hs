@@ -200,10 +200,11 @@ getOrInsertSampleSC
        (SimpleStore CellKeyStore)
      -> Sample -> IO (SimpleStore Sample)
 getOrInsertSampleSC sc si = do
+
   maybeVal <- getSampleSC sc si
   case maybeVal of
-    (Just val) -> return val
-    Nothing -> insertSampleSC sc si
+    (Just st) -> createCheckpoint st >> return st
+    Nothing -> insertSampleSC sc si >>= (\st -> createCheckpoint st >> return st)
 
 
 
