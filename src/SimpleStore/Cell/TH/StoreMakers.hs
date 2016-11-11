@@ -3,7 +3,6 @@
 
 {- | StateMakers are TH functions that assemble the insert state, delete state and update state pieces of a live DB
      entity.
-
 |-}
 module SimpleStore.Cell.TH.StoreMakers (
                                       allStoreMakers
@@ -14,10 +13,6 @@ module SimpleStore.Cell.TH.StoreMakers (
 import           Language.Haskell.TH
 
 import           SimpleStore.Cell.DIG
-
-
-
-
 
 
 
