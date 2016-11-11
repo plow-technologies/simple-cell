@@ -34,8 +34,8 @@ import           Filesystem.Path.CurrentOS hiding (root)
 import           Control.Applicative
 import           Control.Monad
 import           Data.Either
-import           Prelude                   (Ord, show, ($), (.), (==),Bool(..),putStrLn)
-import           System.IO                 (IO,hPutStrLn,stderr)
+import           Prelude                   (Ord, show, ($), (.), (==),Bool(..),putStrLn,otherwise,null,concat,Show)
+import           System.IO                 (IO,hPutStrLn,stderr,hPrint)
 
 -- import CorePrelude hiding (try,catch, finally)
 import           Control.Concurrent.STM
@@ -287,7 +287,7 @@ storeTraverseWithKey_ ck (SimpleCell (CellCore tlive _) _ _ _) tvFcn  = do
 
 
 createCellCheckPointAndClose :: (SimpleCell k src dst tm st (SimpleStore CellKeyStore))   -> IO ()
-createCellCheckPointAndClose    (SimpleCell (CellCore liveMap tvarFStore) _ _pdir _rdir ) =  do  
+createCellCheckPointAndClose    (SimpleCell (CellCore _ tvarFStore) _ _pdir _rdir ) =  do  
   fStore <- readTVarIO tvarFStore
   void (createCheckpoint fStore)
 
@@ -299,11 +299,11 @@ createCellCheckPointAndClose    (SimpleCell (CellCore liveMap tvarFStore) _ _pdi
 
 
 
-initializeSimpleCell :: (Data.Serialize.Serialize stlive ,
-                         Ord tm, Hashable tm ,
-                         Ord dst, Hashable dst ,
-                         Ord src, Hashable src ,
-                         Ord k, Hashable k ) =>
+initializeSimpleCell :: forall k tm dst src stlive. (Data.Serialize.Serialize stlive ,
+                                                     Ord tm, Hashable tm ,
+                                                     Ord dst, Hashable dst ,
+                                                     Ord src, Hashable src ,
+                                                     Ord k, Hashable k ) =>
      CellKey k src dst tm stlive
      -> stlive
      -> Text
@@ -333,21 +333,23 @@ initializeSimpleCell ck emptyTargetState root  = do
  putStrLn "getting Key"                                                  
  fkSet   <-  getCellKeyStore <$>  getSimpleStore fAcidSt :: IO (S.Set FileKey)
 
- let setEitherFileKeyRaw = S.map (unmakeFileKey ck) fkSet
+ let setEitherFileKeyRaw = S.map (unmakeFileKey ck) fkSet                :: S.Set (Either Text (DirectedKeyRaw k src dst tm))
  let groupedList = groupUp 16 (rights . S.toList $ setEitherFileKeyRaw)
+ 
  putStrLn "traverse and wait"
- aStateList <- traverse (traverseAndWait fpr) groupedList
- let stateList =  rights.rights $ Data.Foldable.concat aStateList
+ aStateList <- traverse (traverseAndWait fpr) groupedList :: IO [[Either  StoreError (DirectedKeyRaw k src dst tm, SimpleStore stlive)]]
+ let stateList =  rights $ Data.Foldable.concat aStateList
  putStrLn "state list"
  stateMap <-  ioFromList stateList
  putStrLn "fAcidState"
  tvarFAcid <- newTVarIO fAcidSt
  putStrLn "return"
+ _       <- logAllLefts (S.toList $ setEitherFileKeyRaw) (Prelude.concat aStateList)
  return $ SimpleCell (CellCore stateMap tvarFAcid) ck parentWorkingDir newWorkingDir
   where
       traverseAndWait fp l = do
         aRes <- traverse (traverseLFcn fp) l
-        traverse waitCatch aRes
+        traverse wait aRes
       traverseLFcn  fp fkRaw = async $ traverseLFcn' fp fkRaw
       traverseLFcn' fp fkRaw = do
         let fpKey = fp </> (fromText . codeCellKeyFilename ck $ fkRaw)
@@ -357,7 +359,17 @@ initializeSimpleCell ck emptyTargetState root  = do
 
 
 
-
+logAllLefts  :: [Either Text a] -> [Either StoreError b] -> IO ()
+logAllLefts directedKeyErrors stateList = logDirectedKeyErrors  *> logStoreErrors
+  where
+    logDirectedKeyErrors
+         | Prelude.null directedKeyErrors = return ()
+         | otherwise              = hPutStrLn stderr "Directed Key errors" *> 
+                                    hPrint    stderr  (lefts directedKeyErrors)
+    logStoreErrors
+         | Prelude.null stateList = return ()
+         | otherwise              = hPutStrLn stderr "StoreErrors " *>
+                                    hPrint    stderr  (lefts stateList)
 
 openCKSt :: Serialize st =>
              FilePath -> st -> IO (Either StoreError (SimpleStore st))

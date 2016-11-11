@@ -1,4 +1,5 @@
-
+Version:                2.3.0.1
++ Added checkpoints to simple-store part of tests
 Version:                2.3.0
 + bump simple store to 2.1.0
 Version:                2.2.2
