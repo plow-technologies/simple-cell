@@ -52,7 +52,7 @@ packages:
   extra-dep: true
 - location:
     git: https://github.com/plow-technologies/simple-store.git
-    commit: 3039879600a3e76a52efbcf2476b5a633914c93d
+    commit: 3039879600a3e76a52efbcf2476b5a633914c9d3
   extra-dep: true    
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)
