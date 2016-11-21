@@ -1,5 +1,4 @@
 {-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE RankNTypes   #-}
 
 
 module SimpleStore.Cell.Internal
@@ -11,44 +10,39 @@ module SimpleStore.Cell.Internal
 
 
 import           Control.Concurrent.STM
+import           ListT (ListT)
 import qualified ListT
-import qualified STMContainers.Map      as M
+import qualified STMContainers.Map as M
 
-import           Data.Foldable
-ioFoldRListT :: ListT.MonadTransUncons t =>
-       (a -> b -> b) -> b -> t STM a -> IO b
-ioFoldRListT fcn !seed lst = ioFoldRListT' fcn (return seed) lst
+import Data.Foldable
+ioFoldRListT :: (a -> b -> b) -> b -> ListT STM a -> IO b
+ioFoldRListT fcn !seed lst = ioFoldRListT' fcn (return seed) lst		  
+
+ioFoldRListT' :: (a -> b -> b) -> IO b -> ListT STM a -> IO b 
 
 
 
-ioFoldRListT'
-  :: ListT.MonadTransUncons t =>
-     (a -> b -> b) -> IO b -> t STM a -> IO b
-ioFoldRListT' fcn !iseed lst = do
+ioFoldRListT' fcn !iseed lst = do 
   (ma,mlst) <- atomically $ do
-                   ma <- ListT.head lst
+                   ma <- ListT.head lst 
                    mlst <- ListT.tail lst
                    return (ma,mlst)
-  seed <- iseed
+  seed <- iseed                 
   case ma of
    Nothing -> return seed
    Just val ->  do
      maybe (return seed)
            (ioFoldRListT' fcn (return $ fcn val seed))
-           mlst
+           mlst                 
 
 
 
-ioTraverseListT_ :: ListT.MonadTransUncons t =>
-                                           (a -> IO b) ->
-                                           t STM a ->
-                                           IO ()
-ioTraverseListT_ fcn stmA = ioTraverseListT_' fcn stmA
+ioTraverseListT_ :: (a -> IO b) -> ListT STM a -> IO ()
+ioTraverseListT_ fcn stmA = ioTraverseListT_' fcn stmA 
 
 
-ioTraverseListT_'
-  :: ListT.MonadTransUncons t => (a -> IO a1) -> t STM a -> IO ()
-ioTraverseListT_' fcn stmListT = do
+ioTraverseListT_' :: (a -> IO a1) -> ListT STM a -> IO ()
+ioTraverseListT_' fcn stmListT = do 
           (ma, mlst) <- atomically $ do
                           ma <- ListT.head stmListT
                           mlst <- ListT.tail stmListT
@@ -61,12 +55,10 @@ ioTraverseListT_' fcn stmListT = do
                                 mlst
 
 
-
-ioFromList lst = atomically  createMap
-  where
-    createMap = do
+ioFromList lst = atomically  createMap 
+  where 
+    createMap = do 
                    Data.Foldable.foldl' (\stmAccumulatorMap (k,v) -> do
                                                      accumulatorMap <- stmAccumulatorMap
-                                                     M.insert v k accumulatorMap
+                                                     M.insert v k accumulatorMap 
                                                      return accumulatorMap )  (M.new) lst
-
