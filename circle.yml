@@ -2,6 +2,9 @@
 # This is a default circle.yml that can be used as
 # starting point.
 
+
+
+
 machine:
   pre:
     - echo 'deb http://download.fpcomplete.com/ubuntu precise main'|sudo tee /etc/apt/sources.list.d/fpco.list
