@@ -17,7 +17,7 @@ packages:
   extra-dep: true
 - location:
     git: https://github.com/plow-technologies/simple-store.git
-    commit: 3039879600a3e76a52efbcf2476b5a633914c9d3
+    commit: 94d9ccfd0e9cfdf33c2efab465782ee48a22361e
   extra-dep: true
 extra-deps:
 - aeson-serialize-0.0.0

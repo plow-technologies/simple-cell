@@ -22,7 +22,7 @@ Library
                         SimpleStore.Cell.TH
                         SimpleStore.Cell.TH.StoreMakers                        
   Build-Depends:        base >= 4 && < 5
-                      , simple-store == 3.0.0
+                      , simple-store == 3.0.1
                       , text >= 1.1.0.1
                       , system-filepath >= 0.4.10
                       , system-fileio >= 0.3.12
