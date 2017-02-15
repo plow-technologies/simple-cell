@@ -19,7 +19,7 @@ module SimpleStore.Cell.DIG (
   initializeSimpleCell
   , insertStore
   , getStore
-  , updateStore
+  , repsertStore
   , deleteStore
   , storeFoldrWithKey
   , storeTraverseWithKey_
@@ -101,8 +101,8 @@ emptyCellKeyStore = CellKeyStore S.empty
 -- A file key is what will be written as the file name
 makeFileKey ::  CellKey k src dst tm st ->
                st ->
-               FileKey                  
-makeFileKey ck = FileKey . codeCellKeyFilename ck . getKey ck 
+               FileKey
+makeFileKey ck = FileKey . codeCellKeyFilename ck . getKey ck
 
 
 
@@ -111,7 +111,7 @@ makeFileKey ck = FileKey . codeCellKeyFilename ck . getKey ck
 -- to a DirectedKeyRaw which can be used match on different pieces
 unmakeFileKey :: CellKey k src dst tm st
                         -> FileKey -> Either Text (DirectedKeyRaw k src dst tm)
-unmakeFileKey ck  = decodeCellKeyFilename ck . getFileKey 
+unmakeFileKey ck  = decodeCellKeyFilename ck . getFileKey
 
 
 
@@ -171,9 +171,9 @@ insertStore :: ( Ord k  , Hashable k ,
 insertStore ck (SimpleCell (CellCore liveMap tvarFStore) _ pdir rdir)  st = do
   fullStatePath <- makeWorkingStatePath pdir rdir newStatePath
   fStore        <- readTVarIO tvarFStore
-  _             <- insertSimpleCellPathFileKey fStore fk  
+  _             <- insertSimpleCellPathFileKey fStore fk
   eSimpleStore  <- makeSimpleStore fullStatePath st
-  
+
   either (\e -> deleteSimpleCellPathFileKey fStore fk *> (fail.show) e)
          (atomicallyInsertAndWriteNewState fStore)
          eSimpleStore
@@ -182,10 +182,10 @@ insertStore ck (SimpleCell (CellCore liveMap tvarFStore) _ pdir rdir)  st = do
    fk = makeFileKey ck st
    newStatePath = codeCellKeyFilename ck.getKey ck $ st
 
-   
+
    stmInsert st' = M.insert st' (getKey ck st)  liveMap
 
-     
+
    atomicallyInsertAndWriteNewState fStore simpleStore = do
         atomically $ stmInsert simpleStore
         atomically $ writeTVar tvarFStore fStore
@@ -204,26 +204,24 @@ getStore :: (Ord k, Hashable k,
              Ord dst, Hashable dst,
              Ord tm, Hashable tm,
              Serialize st) =>
-             CellKey k src dst tm st
-             -> SimpleCell k src dst tm st (SimpleStore CellKeyStore)
-             -> st
+                SimpleCell k src dst tm st (SimpleStore CellKeyStore)
+             -> DirectedKeyRaw k src dst tm
              -> IO (Maybe (SimpleStore st))
-getStore ck sc st = atomically (M.lookup dkr cellMap)
+getStore sc dkr = atomically (M.lookup dkr cellMap)
   where
-    dkr = getKey ck st
     cellMap = ccLive.cellCore $ sc
 
 
 
 -- | This function repserts into the store
 -- should be renamed issue number #106
-updateStore :: forall st k src dst tm st'.(Ord k,   Hashable k,
+repsertStore :: forall st k src dst tm st'.(Ord k,   Hashable k,
                                 Ord src, Hashable src,
                                 Ord dst, Hashable dst,
                                 Ord tm,  Hashable tm) =>
                                 CellKey k src dst tm st
                                -> SimpleCell k src dst tm st st' -> SimpleStore st -> st -> IO ()
-updateStore ck (SimpleCell (CellCore liveMap _tvarFStore) _ _pdir _rdir )  simpleSt st =  atomically $ stmInsert simpleSt
+repsertStore ck (SimpleCell (CellCore liveMap _tvarFStore) _ _pdir _rdir )  simpleSt st =  atomically $ stmInsert simpleSt
    where
      stmInsert :: SimpleStore st -> STM ()
      stmInsert simpleSt' = do
@@ -239,20 +237,20 @@ deleteStore  :: (Ord tm, Hashable tm ,
                  Ord k, Hashable k) =>
      CellKey k src dst tm st
      -> SimpleCell k src dst tm t (SimpleStore CellKeyStore)
-     -> st
+     -> DirectedKeyRaw k src dst tm
      -> IO ()
-deleteStore ck (SimpleCell (CellCore liveMap tvarFStore) _ pdir rdir) st = do
+deleteStore ck (SimpleCell (CellCore liveMap tvarFStore) _ pdir rdir) dkr = do
   void (atomically stmDelete)
-  fStore <- readTVarIO tvarFStore  
+  fStore <- readTVarIO tvarFStore
   void (deleteSimpleCellPathFileKey fStore fk)
   void (createTwoCheckpoints fStore)
   atomically (writeTVar tvarFStore fStore)
   np <- makeWorkingStatePath pdir rdir targetStatePath
   removeTree np
      where
-        fk              = makeFileKey ck st
-        targetStatePath = (codeCellKeyFilename ck.getKey ck) st
-        stmDelete       = M.delete (getKey ck st)
+        fk              = FileKey targetStatePath
+        targetStatePath = codeCellKeyFilename ck dkr
+        stmDelete       = M.delete dkr
                                     liveMap
 
 storeFoldrWithKey :: t6
@@ -281,13 +279,13 @@ storeTraverseWithKey_ ck (SimpleCell (CellCore tlive _) _ _ _) tvFcn  = do
             tvFcnWrp        = tvFcn    ck
             listTMapWrapper = M.stream tlive
 
-            
+
 
 
 
 
 createCellCheckPointAndClose :: (SimpleCell k src dst tm st (SimpleStore CellKeyStore))   -> IO ()
-createCellCheckPointAndClose    (SimpleCell (CellCore _ tvarFStore) _ _pdir _rdir ) =  do  
+createCellCheckPointAndClose    (SimpleCell (CellCore _ tvarFStore) _ _pdir _rdir ) =  do
   fStore <- readTVarIO tvarFStore
   void (createCheckpoint fStore)
 
@@ -320,22 +318,22 @@ initializeSimpleCell ck emptyTargetState root  = do
      newWorkingDir  = simpleRootPath
      fpr            = parentWorkingDir </> simpleRootPath
  putStrLn "opening simple-cell"
- fAcidSt <- openSimpleStore fpr  >>= either (\e -> do 
+ fAcidSt <- openSimpleStore fpr  >>= either (\e -> do
                   hPutStrLn stderr (show e)
                   if shouldInitializeFail e
-                  then do 
+                  then do
                       hPutStrLn stderr (show e)
                       eCellKeyStore <- makeSimpleStore fpr emptyCellKeyStore
                       either (\_ -> fail "cellKey won't initialize" ) return  eCellKeyStore
                   else
                       fail "data appears corrupted"
               ) return  ::  IO (SimpleStore CellKeyStore)
- putStrLn "getting Key"                                                  
+ putStrLn "getting Key"
  fkSet   <-  getCellKeyStore <$>  getSimpleStore fAcidSt :: IO (S.Set FileKey)
 
  let setEitherFileKeyRaw = S.map (unmakeFileKey ck) fkSet                :: S.Set (Either Text (DirectedKeyRaw k src dst tm))
  let groupedList = groupUp 16 (rights . S.toList $ setEitherFileKeyRaw)
- 
+
  putStrLn "traverse and wait"
  aStateList <- traverse (traverseAndWait fpr) groupedList :: IO [[Either  StoreError (DirectedKeyRaw k src dst tm, SimpleStore stlive)]]
  let stateList =  rights $ Data.Foldable.concat aStateList
@@ -364,7 +362,7 @@ logAllLefts directedKeyErrors stateList = logDirectedKeyErrors  *> logStoreError
   where
     logDirectedKeyErrors
          | Prelude.null directedKeyErrors = return ()
-         | otherwise              = hPutStrLn stderr "Directed Key errors" *> 
+         | otherwise              = hPutStrLn stderr "Directed Key errors" *>
                                     hPrint    stderr  (lefts directedKeyErrors)
     logStoreErrors
          | Prelude.null stateList = return ()

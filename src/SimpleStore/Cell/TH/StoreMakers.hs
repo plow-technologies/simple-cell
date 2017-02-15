@@ -40,7 +40,7 @@ allStoreMakers = [ makeInitializeXSimpleCell
 
 
 
-                 
+
 -- -- The X represents the position of the incoming type in the filename
 makeInitializeXSimpleCell ::  CellKeyName -> InitializerName -> StoreName -> Q Dec
 makeInitializeXSimpleCell ckN initN stN = funD (buildInitName stN)
@@ -69,7 +69,7 @@ makeUpdateXSimpleCell ::  CellKeyName -> InitializerName -> StoreName -> Q Dec
 makeUpdateXSimpleCell ckN _initN stN = funD (buildUpdateName stN)
                                            [clause [] (normalB updateSimpleCellTH) []  ]
   where
-    updateSimpleCellTH = appE (varE 'updateStore ) (varE ckN)
+    updateSimpleCellTH = appE (varE 'repsertStore ) (varE ckN)
 
 buildUpdateName :: StoreName -> Name
 buildUpdateName stN = (mkName.concat)  [ "update"
@@ -95,8 +95,7 @@ makeGetXSimpleCell :: CellKeyName -> InitializerName -> StoreName -> Q Dec
 makeGetXSimpleCell ckN _ stN = funD (buildGetName stN)
                                   [clause [] (normalB getSimpleCellTH) [] ]
  where
-   getSimpleCellTH = appE (varE 'getStore )
-                          (varE ckN)
+   getSimpleCellTH = varE 'getStore
 
 
 buildGetName :: StoreName -> Name
