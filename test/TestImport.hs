@@ -138,7 +138,7 @@ getSampleSC :: SimpleCell
                        SampleTime
                        Sample
                        (SimpleStore CellKeyStore)
-                     -> Sample -> IO (Maybe (SimpleStore Sample))
+                     -> DirectedSampleKey -> IO (Maybe (SimpleStore Sample))
 
 
 updateSampleSC :: SimpleCell SampleKey SampleSrc SampleDst SampleTime Sample st'
@@ -172,7 +172,7 @@ deleteSampleSC ::  SimpleCell
                           SampleTime
                           t
                           (SimpleStore CellKeyStore)
-                        -> Sample -> IO ()                                  
+                        -> DirectedSampleKey -> IO ()                                  
 
 foldlWithKeySampleSC :: SimpleCell t t1 t2 t3 t5 t4
                               -> (CellKey SampleKey SampleSrc SampleDst SampleTime Sample
@@ -201,7 +201,7 @@ getOrInsertSampleSC
      -> Sample -> IO (SimpleStore Sample)
 getOrInsertSampleSC sc si = do
 
-  maybeVal <- getSampleSC sc si
+  maybeVal <- getSampleSC sc $ getKeyFcn si
   case maybeVal of
     (Just st) -> createCheckpoint st >> return st
     Nothing -> insertSampleSC sc si >>= (\st -> createCheckpoint st >> return st)
@@ -220,7 +220,7 @@ runRestartTest i = do
   putStrLn "init second time"
   sc' <- initializeSampleSC "testSampleCell"
   putStrLn "list em"
-  storeSamples <- traverse (getSampleSC sc') sis
+  storeSamples <- traverse (getSampleSC sc' . getKeyFcn) sis
   putStrLn "store em"
   samples <- traverse (traverse getSimpleStore) storeSamples
   putStrLn "checkpoint"
