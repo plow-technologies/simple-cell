@@ -1,3 +1,7 @@
+Version:                2.7.0.0
++ Add getStores, makeGetXsSimpleCells
++ Adds new query to get all stores for a simple-cell
+
 Version:                2.3.0.1
 + Added checkpoints to simple-store part of tests
 Version:                2.3.0

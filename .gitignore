@@ -16,3 +16,4 @@ TAGS
 ./.stack-work
 .stack-work
 TAGS
+*.cabal

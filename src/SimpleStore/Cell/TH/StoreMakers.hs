@@ -5,27 +5,15 @@
      entity.
 |-}
 module SimpleStore.Cell.TH.StoreMakers (
-                                      allStoreMakers
-                            ) where
-
-
+    allStoreMakers
+  ) where
 
 import           Language.Haskell.TH
-
 import           SimpleStore.Cell.DIG
-
-
 
 type CellKeyName     = Name
 type InitializerName = Name
 type StoreName       = Name
-
-
-
-
-
-
-
 
 allStoreMakers :: [CellKeyName -> InitializerName -> StoreName -> Q Dec]
 allStoreMakers = [ makeInitializeXSimpleCell
@@ -36,9 +24,8 @@ allStoreMakers = [ makeInitializeXSimpleCell
                  , makeCreateCheckpointAndCloseXSimpleCell
                  , makeUpdateXSimpleCell
                  , makeGetXSimpleCell
+                 , makeGetXsSimpleCell
                  ]
-
-
 
 
 -- -- The X represents the position of the incoming type in the filename
@@ -92,16 +79,22 @@ buildDeleteName stN = mkName.concat $ [ "delete"
 
 
 makeGetXSimpleCell :: CellKeyName -> InitializerName -> StoreName -> Q Dec
-makeGetXSimpleCell ckN _ stN = funD (buildGetName stN)
+makeGetXSimpleCell _ckN _ stN = funD (buildGetName stN)
                                   [clause [] (normalB getSimpleCellTH) [] ]
- where
-   getSimpleCellTH = varE 'getStore
-
-
+  where
+    getSimpleCellTH = varE 'getStore
+    
 buildGetName :: StoreName -> Name
 buildGetName stN = mkName.concat $ ["get", (nameBase stN), "SC"]
 
-
+makeGetXsSimpleCell :: CellKeyName -> InitializerName -> StoreName -> Q Dec
+makeGetXsSimpleCell _ckN _ stN = funD (buildGetAllName stN)
+                                 [clause [] (normalB getSimpleCellTH) [] ]
+  where
+    getSimpleCellTH = varE 'getStores
+    
+buildGetAllName :: StoreName -> Name
+buildGetAllName stN = mkName . concat $ ["get", (nameBase stN), "sSC"]
 
 makeFoldlWithKeyXSimpleCell ::  CellKeyName -> InitializerName -> StoreName -> Q Dec
 makeFoldlWithKeyXSimpleCell ckN _ stN = funD (buildFoldlWithKeyName stN)

@@ -16,9 +16,10 @@
 |-}
 
 module SimpleStore.Cell.DIG (
-  initializeSimpleCell
+    initializeSimpleCell
   , insertStore
   , getStore
+  , getStores
   , repsertStore
   , deleteStore
   , storeFoldrWithKey
@@ -32,17 +33,12 @@ import           Filesystem.Path.CurrentOS hiding (root)
 
 -- Controls
 import           Control.Applicative
+import           Control.Concurrent.Async
+import           Control.Concurrent.STM
 import           Control.Monad
 import           Data.Either
-import           Prelude                   (Ord, show, ($), (.), (==),Bool(..),putStrLn,otherwise,null,concat,Show)
+import           Prelude                   (Ord, show, ($), (.), (==),Bool(..),putStrLn,otherwise,null,concat,snd)
 import           System.IO                 (IO,hPutStrLn,stderr,hPrint)
-
--- import CorePrelude hiding (try,catch, finally)
-import           Control.Concurrent.STM
--- import Control.Monad.Reader ( ask )
--- import Control.Monad.State
-
-import           Control.Concurrent.Async
 
 -- Typeclassesate
 
@@ -51,25 +47,21 @@ import           Data.Maybe
 import           Data.Traversable
 import           SimpleStore.Cell.Internal (ioFoldRListT, ioFromList,
                                             ioTraverseListT_)
--- import GHC.Generics
 import           Data.Serialize
-
-
-
-
 
 -- ==================================================
 -- STM Containers and helper functions
 -- ==================================================
 
 import qualified STMContainers.Map         as M
+import qualified ListT as L
 
 -- ==================================================
 import qualified Data.Set                  as S
 
 import           Plow.Extras.List
--- -- Strings /Monomorphs
 
+-- -- Strings /Monomorphs
 import           Data.Text
 
 -- Component Libraries
@@ -78,16 +70,9 @@ import           DirectedKeys.Types
 import           SimpleStore
 import           SimpleStore.Cell.Types
 
-
-
 ------------------------------------------------
 -- END IMPORTS
 ------------------------------------------------
-
-
-
-
-
 
 
 -- | All simple stores should have an empty case
@@ -105,27 +90,17 @@ makeFileKey ::  CellKey k src dst tm st ->
 makeFileKey ck = FileKey . codeCellKeyFilename ck . getKey ck
 
 
-
-
 -- | Go from a file key (writable to a file system usually)
 -- to a DirectedKeyRaw which can be used match on different pieces
 unmakeFileKey :: CellKey k src dst tm st
                         -> FileKey -> Either Text (DirectedKeyRaw k src dst tm)
 unmakeFileKey ck  = decodeCellKeyFilename ck . getFileKey
 
-
-
-
-
 -- | A parent dir (pdir) a root dir for the store (rdir) and the newStatePath
-makeWorkingStatePath  :: (Functor m, Monad m) =>     FilePath -> FilePath -> Text -> m FilePath
+makeWorkingStatePath  :: (Monad m) => FilePath -> FilePath -> Text -> m FilePath
 makeWorkingStatePath pdir rdir newStatePath = do
     void $ when (newStatePath == "") (fail "--> Cell key led to empty state path")
     return $ pdir </> rdir </> fromText newStatePath
-
-
-
-
 
 
 --------------------------------------------------
@@ -192,18 +167,11 @@ insertStore ck (SimpleCell (CellCore liveMap tvarFStore) _ pdir rdir)  st = do
         return simpleStore
 
 
-
-
-
-
-
-
 -- | Get a SimpleStore from the appropriate Cell
 getStore :: (Ord k, Hashable k,
              Ord src, Hashable src,
              Ord dst, Hashable dst,
-             Ord tm, Hashable tm,
-             Serialize st) =>
+             Ord tm, Hashable tm) =>
                 SimpleCell k src dst tm st (SimpleStore CellKeyStore)
              -> DirectedKeyRaw k src dst tm
              -> IO (Maybe (SimpleStore st))
@@ -211,6 +179,14 @@ getStore sc dkr = atomically (M.lookup dkr cellMap)
   where
     cellMap = ccLive.cellCore $ sc
 
+-- | Get all SimpleStores from a Cell
+getStores :: SimpleCell k src dst tm st (SimpleStore CellKeyStore)
+          -> IO [(SimpleStore st)]
+getStores sc = do 
+  x <- atomically $ (L.toList (M.stream cellMap))
+  return $ snd <$> x
+  where
+    cellMap = ccLive . cellCore $ sc
 
 
 -- | This function repserts into the store
