@@ -115,16 +115,13 @@ $(makeStoreCell 'sampleStoreCellKey 'initSample ''Sample)
 
 getSampleSC :: SampleCell -> SampleDirectedKey -> IO (Maybe (SimpleStore Sample))
 
-getSamplesSC :: SampleCell -> IO [SimpleStore Sample]
-
 updateSampleSC :: SampleCell -> SimpleStore Sample -> Sample -> IO ()
 
 createCheckpointAndCloseSampleSC :: SampleCell -> IO ()
-                                          
 
 insertSampleSC :: SampleCell -> Sample -> IO (SimpleStore Sample)
 
-deleteSampleSC :: SampleCell -> SampleDirectedKey -> IO ()                                  
+deleteSampleSC :: SampleCell -> SampleDirectedKey -> IO ()
 
 traverseWithKeySampleSC_ 
   :: SampleCell
@@ -149,7 +146,7 @@ getOrInsertSampleSC sc si = do
     (Just st) -> createCheckpoint st >> return st
     Nothing -> insertSampleSC sc si >>= (\st -> createCheckpoint st >> return st)
 
-runRestartTest :: [Int] -> IO ([Int], Bool)
+runRestartTest :: [Int] -> IO [Int]
 runRestartTest i = do
   let sis = Sample <$> i
   
@@ -170,18 +167,11 @@ runRestartTest i = do
   
   putStrLn "store em"
   samples <- traverse (traverse getSimpleStore) storeSamples
-  
-  putStrLn "list all samples in the cell"
-  allStoreSamples <- getSamplesSC sc'
-  allSamples <- traverse getSimpleStore allStoreSamples
-  
-  putStrLn "check if all elems of samples are in allSamples"
-  let samplesInAllSamples = and $ (flip elem allSamples) <$> (catMaybes samples)
-  
+    
   putStrLn "checkpoint"
   createCheckpointAndCloseSampleSC sc'
   
-  return $ (sampleInt <$> (catMaybes samples), samplesInAllSamples)
+  return $ sampleInt <$> (catMaybes samples)
 
 
   

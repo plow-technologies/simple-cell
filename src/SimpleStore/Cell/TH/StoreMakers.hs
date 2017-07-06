@@ -24,7 +24,6 @@ allStoreMakers = [ makeInitializeXSimpleCell
                  , makeCreateCheckpointAndCloseXSimpleCell
                  , makeUpdateXSimpleCell
                  , makeGetXSimpleCell
-                 , makeGetXsSimpleCell
                  ]
 
 
@@ -86,15 +85,6 @@ makeGetXSimpleCell _ckN _ stN = funD (buildGetName stN)
     
 buildGetName :: StoreName -> Name
 buildGetName stN = mkName.concat $ ["get", (nameBase stN), "SC"]
-
-makeGetXsSimpleCell :: CellKeyName -> InitializerName -> StoreName -> Q Dec
-makeGetXsSimpleCell _ckN _ stN = funD (buildGetAllName stN)
-                                 [clause [] (normalB getSimpleCellTH) [] ]
-  where
-    getSimpleCellTH = varE 'getStores
-    
-buildGetAllName :: StoreName -> Name
-buildGetAllName stN = mkName . concat $ ["get", (nameBase stN), "sSC"]
 
 makeFoldlWithKeyXSimpleCell ::  CellKeyName -> InitializerName -> StoreName -> Q Dec
 makeFoldlWithKeyXSimpleCell ckN _ stN = funD (buildFoldlWithKeyName stN)

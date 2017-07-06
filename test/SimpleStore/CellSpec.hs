@@ -19,6 +19,5 @@ spec = do
 propInitThenRead :: Property
 propInitThenRead = monadicIO $ do 
   i <- pick arbitrary
-  (r,t) <- run $ runRestartTest i
+  r <- run $ runRestartTest i
   assert $ (r) == i
-  assert $ t == True

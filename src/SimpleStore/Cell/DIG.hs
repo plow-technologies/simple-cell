@@ -19,7 +19,6 @@ module SimpleStore.Cell.DIG (
     initializeSimpleCell
   , insertStore
   , getStore
-  , getStores
   , repsertStore
   , deleteStore
   , storeFoldrWithKey
@@ -37,7 +36,7 @@ import           Control.Concurrent.Async
 import           Control.Concurrent.STM
 import           Control.Monad
 import           Data.Either
-import           Prelude                   (Ord, show, ($), (.), (==),Bool(..),putStrLn,otherwise,null,concat,snd)
+import           Prelude                   (Ord, show, ($), (.), (==),Bool(..),putStrLn,otherwise,null,concat)
 import           System.IO                 (IO,hPutStrLn,stderr,hPrint)
 
 -- Typeclassesate
@@ -54,7 +53,6 @@ import           Data.Serialize
 -- ==================================================
 
 import qualified STMContainers.Map         as M
-import qualified ListT as L
 
 -- ==================================================
 import qualified Data.Set                  as S
@@ -178,16 +176,6 @@ getStore :: (Ord k, Hashable k,
 getStore sc dkr = atomically (M.lookup dkr cellMap)
   where
     cellMap = ccLive.cellCore $ sc
-
--- | Get all SimpleStores from a Cell
-getStores :: SimpleCell k src dst tm st (SimpleStore CellKeyStore)
-          -> IO [(SimpleStore st)]
-getStores sc = do 
-  x <- atomically $ (L.toList (M.stream cellMap))
-  return $ snd <$> x
-  where
-    cellMap = ccLive . cellCore $ sc
-
 
 -- | This function repserts into the store
 -- should be renamed issue number #106
