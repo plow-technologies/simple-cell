@@ -115,7 +115,7 @@ $(makeStoreCell 'sampleStoreCellKey 'initSample ''Sample)
 
 getSampleSC :: SampleCell -> SampleDirectedKey -> IO (Maybe (SimpleStore Sample))
 
-updateSampleSC :: SampleCell -> SimpleStore Sample -> Sample -> IO ()
+repsertSampleSC :: SampleCell -> SimpleStore Sample -> Sample -> IO ()
 
 createCheckpointAndCloseSampleSC :: SampleCell -> IO ()
 
