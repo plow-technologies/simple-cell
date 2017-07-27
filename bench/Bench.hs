@@ -1,15 +1,18 @@
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE OverloadedStrings #-}
+
+module Bench where
+  
 import Control.Applicative ((<$>))
+import Control.Concurrent (threadDelay)
 import Control.Monad (void,forever)
+import Data.Maybe
+import Data.Serialize
 import qualified Data.Text as T
 import Data.Traversable (traverse)
 import SimpleStore
-import Data.Serialize
 import System.Random (getStdGen, randoms)
-import Control.Concurrent (threadDelay)
 import TestImport
-import Data.Maybe
 
 main :: IO ()
 main = do
@@ -22,8 +25,6 @@ main = do
     print "restart"
     void $ traverse checkpointWithoutReGet  (catMaybes samples)
 
-
-
 storeState sc sample = do
  putStrLn "running"
  threadDelay $ 3*1000  
@@ -32,13 +33,11 @@ storeState sc sample = do
                 \simpleStoreSample -> return (simpleStoreSample, sample) )
 
 
-checkpointWithoutReGet
-  :: Data.Serialize.Serialize st =>
-     (SimpleStore st, t) -> IO (SimpleStore st)
+checkpointWithoutReGet :: Data.Serialize.Serialize st 
+                       => (SimpleStore st, t) 
+                       -> IO (SimpleStore st)
 checkpointWithoutReGet  (simpleStoreSample,sample) = do
---                                                     eT <- modifySimpleStore simpleStoreSample return
-                                                     eT' <- createCheckpoint simpleStoreSample
-                                                     a <- either (\e -> fail (T.unpack $ T.concat [T.pack.show $ e," modify failure"] ) ) (const $ return simpleStoreSample) eT' -- (eT >> eT')
---                                                     print a
-                                                     return simpleStoreSample
+  eT' <- createCheckpoint simpleStoreSample
+  a <- either (\e -> fail (T.unpack $ T.concat [T.pack.show $ e," modify failure"] ) ) (const $ return simpleStoreSample) eT' -- (eT >> eT')
+  return simpleStoreSample
 

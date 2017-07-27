@@ -23,50 +23,35 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 
 
-
-
-
-
-
+type SampleCell        = SimpleCell     SampleKey SampleSrc SampleDst SampleTime Sample (SimpleStore CellKeyStore)
+type SampleCellKey     = CellKey        SampleKey SampleSrc SampleDst SampleTime Sample
+type SampleDirectedKey = DirectedKeyRaw SampleKey SampleSrc SampleDst SampleTime
 
 data Sample = Sample {
-           sampleInt :: Int 
-           } 
-    deriving (Show,Eq,Generic)
-
-
-
-
+  sampleInt :: Int 
+  } deriving (Show,Eq,Generic)
 
 newtype SampleDst = SampleDst { unSampleDst :: Int }
  deriving (Eq,Ord,Generic,Hashable) 
 
 instance Serialize SampleDst where
-
-
   
 newtype SampleSrc = SampleSrc { unSampleSrc :: Int }
  deriving (Eq,Ord,Generic ,Hashable) 
 
 instance Serialize SampleSrc where
 
-
-
 newtype SampleKey = SampleKey { unSampleKey :: Int } 
  deriving (Eq,Ord,Generic ,Hashable) 
 
 instance Serialize SampleKey where
-
 
 newtype SampleTime = SampleTime { unSampleTime :: Int }
  deriving (Eq,Ord,Generic ,Hashable) 
 
 instance Serialize SampleTime where
 
-
-
 ----------------------------
-
 
 sampleSrc :: SampleSrc
 sampleSrc = SampleSrc 1
@@ -76,7 +61,6 @@ sampleDst = SampleDst 1
 
 sampleTime :: SampleTime
 sampleTime = (SampleTime 0)
-
 
 
 instance ToJSON Sample where 
@@ -89,14 +73,13 @@ instance Serialize Sample where
 initSample :: Sample
 initSample = Sample 0 
 
-sampleStoreCellKey :: CellKey SampleKey SampleSrc SampleDst SampleTime Sample 
+sampleStoreCellKey :: SampleCellKey
 sampleStoreCellKey =  CellKey { getKey = getKeyFcn 
                               , codeCellKeyFilename = fullEncodeFcn
                               , decodeCellKeyFilename = fullDecodeFcn
                               }
 
-
-
+{-
 type DirectedSampleKey =   DirectedKeyRaw  SampleKey SampleSrc SampleDst SampleTime
 type SampleCell = SimpleCell
                        SampleKey
@@ -107,23 +90,22 @@ type SampleCell = SimpleCell
                        (SimpleStore CellKeyStore)
 
 type SampleCK = CellKey SampleKey SampleSrc SampleDst SampleTime Sample
-
-fullEncodeFcn :: DirectedSampleKey -> T.Text
+-}
+fullEncodeFcn :: SampleDirectedKey -> T.Text
 fullEncodeFcn = TE.decodeUtf8 . encodeKey
 
-fullDecodeFcn :: (Serialize datetime, Serialize destination, Serialize source,
-                        Serialize key) =>
-                       T.Text
-                       -> Either T.Text (DirectedKeyRaw key source destination datetime)
+fullDecodeFcn :: ( Serialize datetime
+                 , Serialize destination
+                 , Serialize source
+                 , Serialize key)
+                 => T.Text
+                 -> Either T.Text (DirectedKeyRaw key source destination datetime)
 fullDecodeFcn akey = case (decodeKey $ TE.encodeUtf8 $ akey) of
                        Left e -> Left . T.pack $ e
                        Right r -> Right r
 
-getKeyFcn :: Sample -> DirectedSampleKey
+getKeyFcn :: Sample -> SampleDirectedKey
 getKeyFcn st = DKeyRaw (SampleKey . sampleInt $ st) sampleSrc sampleDst sampleTime
-
-
-
 
 --- Simple Cell generation
 
@@ -131,100 +113,64 @@ $(makeStoreCell 'sampleStoreCellKey 'initSample ''Sample)
 
 -- | TH Defnitions
 
-getSampleSC :: SimpleCell
-                       SampleKey
-                       SampleSrc
-                       SampleDst
-                       SampleTime
-                       Sample
-                       (SimpleStore CellKeyStore)
-                     -> DirectedSampleKey -> IO (Maybe (SimpleStore Sample))
+getSampleSC :: SampleCell -> SampleDirectedKey -> IO (Maybe (SimpleStore Sample))
 
+repsertSampleSC :: SampleCell -> SimpleStore Sample -> Sample -> IO ()
 
-updateSampleSC :: SimpleCell SampleKey SampleSrc SampleDst SampleTime Sample st'
-                        -> SimpleStore Sample -> Sample -> IO ()
+createCheckpointAndCloseSampleSC :: SampleCell -> IO ()
 
+insertSampleSC :: SampleCell -> Sample -> IO (SimpleStore Sample)
 
-createCheckpointAndCloseSampleSC :: SimpleCell t t1 t2 t3 st (SimpleStore CellKeyStore)
-                                          -> IO ()
-                                          
+deleteSampleSC :: SampleCell -> SampleDirectedKey -> IO ()
 
+traverseWithKeySampleSC_ 
+  :: SampleCell
+  -> (SampleCellKey -> SampleDirectedKey -> Sample -> IO ())
+  -> IO ()
 
-traverseWithKeySampleSC_ ::  SimpleCell t t1 t2 t3 t6 t4
-                                  -> (CellKey SampleKey SampleSrc SampleDst SampleTime Sample
-                                      -> DirectedKeyRaw t t1 t2 t3 -> t6 -> IO ())
-                                  -> IO ()
+foldlWithKeySampleSC 
+  :: SampleCell
+  -> (SampleCellKey -> SampleDirectedKey -> Sample -> IO b -> IO b)
+  -> IO b
+  -> IO b
 
-
-insertSampleSC :: SimpleCell
-                          SampleKey
-                          SampleSrc
-                          SampleDst
-                          SampleTime
-                          Sample
-                          (SimpleStore CellKeyStore)
-                        -> Sample -> IO (SimpleStore Sample)
-
-deleteSampleSC ::  SimpleCell
-                          SampleKey
-                          SampleSrc
-                          SampleDst
-                          SampleTime
-                          t
-                          (SimpleStore CellKeyStore)
-                        -> DirectedSampleKey -> IO ()                                  
-
-foldlWithKeySampleSC :: SimpleCell t t1 t2 t3 t5 t4
-                              -> (CellKey SampleKey SampleSrc SampleDst SampleTime Sample
-                                  -> DirectedKeyRaw t t1 t2 t3 -> t5 -> IO b -> IO b)
-                              -> IO b
-                              -> IO b
-initializeSampleSC :: T.Text  
-                            -> IO
-                                 (SimpleCell
-                                    SampleKey
-                                    SampleSrc
-                                    SampleDst
-                                    SampleTime
-                                    Sample
-                                    (SimpleStore CellKeyStore))
-
+initializeSampleSC :: T.Text -> IO SampleCell
 
 getOrInsertSampleSC
-  :: SimpleCell
-       SampleKey
-       SampleSrc
-       SampleDst
-       SampleTime
-       Sample
-       (SimpleStore CellKeyStore)
-     -> Sample -> IO (SimpleStore Sample)
+  :: SampleCell
+  -> Sample 
+  -> IO (SimpleStore Sample)
 getOrInsertSampleSC sc si = do
-
   maybeVal <- getSampleSC sc $ getKeyFcn si
   case maybeVal of
     (Just st) -> createCheckpoint st >> return st
     Nothing -> insertSampleSC sc si >>= (\st -> createCheckpoint st >> return st)
 
-
-
 runRestartTest :: [Int] -> IO [Int]
 runRestartTest i = do
   let sis = Sample <$> i
+  
   putStrLn "init first time"
   sc <- initializeSampleSC "testSampleCell"
+  
   putStrLn "traverse given list"
-  void $ traverse (getOrInsertSampleSC sc ) sis
+  void $ traverse (getOrInsertSampleSC sc) sis
+  
   putStrLn "first checkpiont and close"
   createCheckpointAndCloseSampleSC sc
+  
   putStrLn "init second time"
   sc' <- initializeSampleSC "testSampleCell"
+  
   putStrLn "list em"
   storeSamples <- traverse (getSampleSC sc' . getKeyFcn) sis
+  
   putStrLn "store em"
   samples <- traverse (traverse getSimpleStore) storeSamples
+    
   putStrLn "checkpoint"
   createCheckpointAndCloseSampleSC sc'
+  
   return $ sampleInt <$> (catMaybes samples)
 
 
