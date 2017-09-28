@@ -269,12 +269,7 @@ initializeSimpleCell :: forall k tm dst src stlive. (Data.Serialize.Serialize st
      CellKey k src dst tm stlive
      -> stlive
      -> Text
-     -> IO (SimpleCell k
-                       src
-                       dst
-                       tm
-                       stlive
-                       (SimpleStore CellKeyStore))
+     -> IO (InitializedCell k src dst tm stlive (SimpleStore CellKeyStore))
 
 initializeSimpleCell ck emptyTargetState root  = do
  parentWorkingDir   <- getWorkingDirectory
@@ -300,14 +295,15 @@ initializeSimpleCell ck emptyTargetState root  = do
 
  putStrLn "traverse and wait"
  aStateList <- traverse (traverseAndWait fpr) groupedList :: IO [[Either  StoreError (DirectedKeyRaw k src dst tm, SimpleStore stlive)]]
- let stateList =  rights $ Data.Foldable.concat aStateList
+ let stateList = rights $ Data.Foldable.concat aStateList
+     errorList = lefts $ Data.Foldable.concat aStateList
  putStrLn "state list"
  stateMap <-  ioFromList stateList
  putStrLn "fAcidState"
  tvarFAcid <- newTVarIO fAcidSt
  putStrLn "return"
  _       <- logAllLefts (S.toList $ setEitherFileKeyRaw) (Prelude.concat aStateList)
- return $ SimpleCell (CellCore stateMap tvarFAcid) ck parentWorkingDir newWorkingDir
+ return $ InitializedCell (SimpleCell (CellCore stateMap tvarFAcid) ck parentWorkingDir newWorkingDir) errorList
   where
       traverseAndWait fp l = do
         aRes <- traverse (traverseLFcn fp) l
