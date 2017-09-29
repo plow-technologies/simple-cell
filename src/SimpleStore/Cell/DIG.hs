@@ -17,6 +17,7 @@
 
 module SimpleStore.Cell.DIG (
     initializeSimpleCell
+  , initializeSimpleCellAndErrors
   , insertStore
   , getStore
   , repsertStore
@@ -36,7 +37,7 @@ import           Control.Concurrent.Async
 import           Control.Concurrent.STM
 import           Control.Monad
 import           Data.Either
-import           Prelude                   (Ord, show, ($), (.), (==),Bool(..),putStrLn,otherwise,null,concat)
+import           Prelude                   (Ord, show, ($), (.), (==),Bool(..),putStrLn,otherwise,null,concat,snd)
 import           System.IO                 (IO,hPutStrLn,stderr,hPrint)
 
 -- Typeclassesate
@@ -254,29 +255,13 @@ createCellCheckPointAndClose    (SimpleCell (CellCore _ tvarFStore) _ _pdir _rdi
   void (createCheckpoint fStore)
 
 
-
-
-
-
-
-
-
-initializeSimpleCell :: forall k tm dst src stlive. (Data.Serialize.Serialize stlive ,
-                                                     Ord tm, Hashable tm ,
-                                                     Ord dst, Hashable dst ,
-                                                     Ord src, Hashable src ,
-                                                     Ord k, Hashable k ) =>
-     CellKey k src dst tm stlive
-     -> stlive
-     -> Text
-     -> IO (SimpleCell k
-                       src
-                       dst
-                       tm
-                       stlive
-                       (SimpleStore CellKeyStore))
-
-initializeSimpleCell ck emptyTargetState root  = do
+initializeSimpleCell'
+  :: forall k tm dst src stlive. (Data.Serialize.Serialize stlive , Ord tm, Hashable tm , Ord dst, Hashable dst , Ord src, Hashable src , Ord k, Hashable k )
+  => CellKey k src dst tm stlive
+  -> stlive
+  -> Text
+  -> IO ([StoreError], SimpleCell k src dst tm stlive (SimpleStore CellKeyStore))
+initializeSimpleCell' ck emptyTargetState root  = do
  parentWorkingDir   <- getWorkingDirectory
  let simpleRootPath = fromText root
      newWorkingDir  = simpleRootPath
@@ -300,14 +285,15 @@ initializeSimpleCell ck emptyTargetState root  = do
 
  putStrLn "traverse and wait"
  aStateList <- traverse (traverseAndWait fpr) groupedList :: IO [[Either  StoreError (DirectedKeyRaw k src dst tm, SimpleStore stlive)]]
- let stateList =  rights $ Data.Foldable.concat aStateList
+ let stateList = rights $ Data.Foldable.concat aStateList
+     errorList = lefts $ Data.Foldable.concat aStateList
  putStrLn "state list"
  stateMap <-  ioFromList stateList
  putStrLn "fAcidState"
  tvarFAcid <- newTVarIO fAcidSt
  putStrLn "return"
  _       <- logAllLefts (S.toList $ setEitherFileKeyRaw) (Prelude.concat aStateList)
- return $ SimpleCell (CellCore stateMap tvarFAcid) ck parentWorkingDir newWorkingDir
+ return $ (errorList, (SimpleCell (CellCore stateMap tvarFAcid) ck parentWorkingDir newWorkingDir))
   where
       traverseAndWait fp l = do
         aRes <- traverse (traverseLFcn fp) l
@@ -318,6 +304,34 @@ initializeSimpleCell ck emptyTargetState root  = do
         est' <- openCKSt fpKey emptyTargetState
 --        print $ "opened: " ++ show fpKey
         return $ fmap (\st' -> (fkRaw, st')) est'
+
+
+
+
+
+
+
+-- | Initialize SimpleCell
+initializeSimpleCell
+  :: forall k tm dst src stlive. (Data.Serialize.Serialize stlive , Ord tm, Hashable tm , Ord dst, Hashable dst , Ord src, Hashable src , Ord k, Hashable k)
+  => CellKey k src dst tm stlive
+  -> stlive
+  -> Text
+  -> IO (SimpleCell k src dst tm stlive (SimpleStore CellKeyStore))
+initializeSimpleCell ck emptyTargetState root = snd <$> initializeSimpleCell' ck emptyTargetState root
+
+
+-- | Initialize SimpleCell and return errors together with SimpleCell.
+-- The errors and cell are wrapped in 'InitializedCell' record type.
+initializeSimpleCellAndErrors
+  :: forall k tm dst src stlive. (Data.Serialize.Serialize stlive , Ord tm, Hashable tm , Ord dst, Hashable dst , Ord src, Hashable src , Ord k, Hashable k)
+  => CellKey k src dst tm stlive
+  -> stlive
+  -> Text
+  -> IO (InitializedCell k src dst tm stlive (SimpleStore CellKeyStore))
+initializeSimpleCellAndErrors ck emptyTargetState root = do
+  (errors, cell) <- initializeSimpleCell' ck emptyTargetState root
+  pure $ InitializedCell cell errors
 
 
 

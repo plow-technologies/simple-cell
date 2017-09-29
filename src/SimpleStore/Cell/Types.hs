@@ -25,6 +25,7 @@ module SimpleStore.Cell.Types (StoreCellError(..)
                             , SimpleCell (..)
                             , CellCore (..)
                             , FileKey (..)
+                            , InitializedCell(..)
                             ) where
 
 
@@ -144,3 +145,8 @@ data StoreCellError  = InsertFail    !Text
                      | DeleteFail    !Text
                      | StateNotFound !Text
 
+
+data InitializedCell k src dst tm stlive stdormant = InitializedCell
+  { initializedCell       :: SimpleCell k src dst tm stlive stdormant
+  , initializedCellErrors :: [StoreError]
+  } deriving (Typeable, Generic)

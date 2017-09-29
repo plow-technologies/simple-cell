@@ -1,6 +1,10 @@
+# 2.8.0.0
+* Return record `InitializedCell` in `initializeXXXStore` which carry the cell
+  and any initialization errors.
+
 # 2.7.0.0
 
-* rename `makeUpdateXSimpleCell` to `makeRepsertXSimpleCell` and resulting 
+* rename `makeUpdateXSimpleCell` to `makeRepsertXSimpleCell` and resulting
 function starts with `repsert` instead of `update`.
 
 # 2.6.0.1

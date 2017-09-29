@@ -17,6 +17,7 @@ type StoreName       = Name
 
 allStoreMakers :: [CellKeyName -> InitializerName -> StoreName -> Q Dec]
 allStoreMakers = [ makeInitializeXSimpleCell
+                 , makeInitializeXSimpleCellAndErrors
                  , makeInsertXSimpleCell
                  , makeDeleteXSimpleCell
                  , makeFoldlWithKeyXSimpleCell
@@ -34,11 +35,21 @@ makeInitializeXSimpleCell ckN initN stN = funD (buildInitName stN)
   where
     initializeSimpleCellTH = appE (appE (varE 'initializeSimpleCell ) (varE ckN)) (varE initN)
 
+
+makeInitializeXSimpleCellAndErrors ::  CellKeyName -> InitializerName -> StoreName -> Q Dec
+makeInitializeXSimpleCellAndErrors ckN initN stN = funD (buildInitWithErrorsName stN)
+                                             [clause [] (normalB initializeSimpleCellTH ) []  ]
+  where
+    initializeSimpleCellTH = appE (appE (varE 'initializeSimpleCellAndErrors ) (varE ckN)) (varE initN)
+
 buildInitName :: StoreName -> Name
 buildInitName stN = mkName . concat $ [ "initialize"
                                       , nameBase stN
                                       , "SC"
                                       ]
+
+buildInitWithErrorsName :: StoreName -> Name
+buildInitWithErrorsName stN = mkName . concat $ [ "initialize" , nameBase stN , "WithErrorsSC" ]
 
 makeInsertXSimpleCell ::  CellKeyName -> InitializerName -> StoreName -> Q Dec
 makeInsertXSimpleCell ckN _initN stN = funD (buildInsertName stN)
@@ -85,7 +96,7 @@ makeGetXSimpleCell _ckN _ stN = funD (buildGetName stN)
                                   [clause [] (normalB getSimpleCellTH) [] ]
   where
     getSimpleCellTH = varE 'getStore
-    
+
 buildGetName :: StoreName -> Name
 buildGetName stN = mkName . concat $ [ "get"
                                      , nameBase stN

@@ -28,26 +28,26 @@ type SampleCellKey     = CellKey        SampleKey SampleSrc SampleDst SampleTime
 type SampleDirectedKey = DirectedKeyRaw SampleKey SampleSrc SampleDst SampleTime
 
 data Sample = Sample {
-  sampleInt :: Int 
+  sampleInt :: Int
   } deriving (Show,Eq,Generic)
 
 newtype SampleDst = SampleDst { unSampleDst :: Int }
- deriving (Eq,Ord,Generic,Hashable) 
+ deriving (Eq,Ord,Generic,Hashable)
 
 instance Serialize SampleDst where
-  
+
 newtype SampleSrc = SampleSrc { unSampleSrc :: Int }
- deriving (Eq,Ord,Generic ,Hashable) 
+ deriving (Eq,Ord,Generic ,Hashable)
 
 instance Serialize SampleSrc where
 
-newtype SampleKey = SampleKey { unSampleKey :: Int } 
- deriving (Eq,Ord,Generic ,Hashable) 
+newtype SampleKey = SampleKey { unSampleKey :: Int }
+ deriving (Eq,Ord,Generic ,Hashable)
 
 instance Serialize SampleKey where
 
 newtype SampleTime = SampleTime { unSampleTime :: Int }
- deriving (Eq,Ord,Generic ,Hashable) 
+ deriving (Eq,Ord,Generic ,Hashable)
 
 instance Serialize SampleTime where
 
@@ -63,18 +63,18 @@ sampleTime :: SampleTime
 sampleTime = (SampleTime 0)
 
 
-instance ToJSON Sample where 
-instance FromJSON Sample where 
+instance ToJSON Sample where
+instance FromJSON Sample where
 
-instance Serialize Sample where  
+instance Serialize Sample where
   get = getFromJSON
   put = putToJSON
 
 initSample :: Sample
-initSample = Sample 0 
+initSample = Sample 0
 
 sampleStoreCellKey :: SampleCellKey
-sampleStoreCellKey =  CellKey { getKey = getKeyFcn 
+sampleStoreCellKey =  CellKey { getKey = getKeyFcn
                               , codeCellKeyFilename = fullEncodeFcn
                               , decodeCellKeyFilename = fullDecodeFcn
                               }
@@ -123,12 +123,12 @@ insertSampleSC :: SampleCell -> Sample -> IO (SimpleStore Sample)
 
 deleteSampleSC :: SampleCell -> SampleDirectedKey -> IO ()
 
-traverseWithKeySampleSC_ 
+traverseWithKeySampleSC_
   :: SampleCell
   -> (SampleCellKey -> SampleDirectedKey -> Sample -> IO ())
   -> IO ()
 
-foldlWithKeySampleSC 
+foldlWithKeySampleSC
   :: SampleCell
   -> (SampleCellKey -> SampleDirectedKey -> Sample -> IO b -> IO b)
   -> IO b
@@ -136,9 +136,11 @@ foldlWithKeySampleSC
 
 initializeSampleSC :: T.Text -> IO SampleCell
 
+initializeSampleWithErrorsSC :: T.Text -> IO (InitializedCell SampleKey SampleSrc SampleDst SampleTime Sample (SimpleStore CellKeyStore))
+
 getOrInsertSampleSC
   :: SampleCell
-  -> Sample 
+  -> Sample
   -> IO (SimpleStore Sample)
 getOrInsertSampleSC sc si = do
   maybeVal <- getSampleSC sc $ getKeyFcn si
@@ -149,29 +151,29 @@ getOrInsertSampleSC sc si = do
 runRestartTest :: [Int] -> IO [Int]
 runRestartTest i = do
   let sis = Sample <$> i
-  
+
   putStrLn "init first time"
   sc <- initializeSampleSC "testSampleCell"
-  
+
   putStrLn "traverse given list"
   void $ traverse (getOrInsertSampleSC sc) sis
-  
+
   putStrLn "first checkpiont and close"
   createCheckpointAndCloseSampleSC sc
-  
+
   putStrLn "init second time"
   sc' <- initializeSampleSC "testSampleCell"
-  
+
   putStrLn "list em"
   storeSamples <- traverse (getSampleSC sc' . getKeyFcn) sis
-  
+
   putStrLn "store em"
   samples <- traverse (traverse getSimpleStore) storeSamples
-    
+
   putStrLn "checkpoint"
   createCheckpointAndCloseSampleSC sc'
-  
+
   return $ sampleInt <$> (catMaybes samples)
 
 
-  
+
