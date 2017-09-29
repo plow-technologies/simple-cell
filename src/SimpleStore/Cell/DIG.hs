@@ -311,6 +311,7 @@ initializeSimpleCell' ck emptyTargetState root  = do
 
 
 
+-- | Initialize SimpleCell
 initializeSimpleCell
   :: forall k tm dst src stlive. (Data.Serialize.Serialize stlive , Ord tm, Hashable tm , Ord dst, Hashable dst , Ord src, Hashable src , Ord k, Hashable k)
   => CellKey k src dst tm stlive
@@ -320,6 +321,8 @@ initializeSimpleCell
 initializeSimpleCell ck emptyTargetState root = snd <$> initializeSimpleCell' ck emptyTargetState root
 
 
+-- | Initialize SimpleCell and return errors together with SimpleCell.
+-- The errors and cell are wrapped in 'InitializedCell' record type.
 initializeSimpleCellAndErrors
   :: forall k tm dst src stlive. (Data.Serialize.Serialize stlive , Ord tm, Hashable tm , Ord dst, Hashable dst , Ord src, Hashable src , Ord k, Hashable k)
   => CellKey k src dst tm stlive
