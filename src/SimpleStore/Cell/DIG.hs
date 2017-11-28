@@ -218,9 +218,9 @@ deleteStore ck (SimpleCell (CellCore liveMap tvarFStore) _ pdir rdir) dkr = do
         stmDelete       = M.delete dkr
                                     liveMap
 
-storeFoldrWithKey :: t6
-     -> SimpleCell t t1 t2 t3 t5 t4
-     -> (t6 -> DirectedKeyRaw t t1 t2 t3 -> t5 -> IO b -> IO b)
+storeFoldrWithKey :: ck
+     -> SimpleCell k src dst tm stlive stlive           
+     -> (ck -> DirectedKeyRaw k src dst tm -> stlive -> IO b -> IO b)
      -> IO b
      -> IO b
 storeFoldrWithKey ck (SimpleCell (CellCore tlive _) _ _ _) fldFcn seed = do
