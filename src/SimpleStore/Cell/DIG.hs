@@ -233,8 +233,8 @@ storeFoldrWithKey ck (SimpleCell (CellCore tlive _) _ _ _) fldFcn seed = do
                            seed keyValueListT
   innerIO
 
-storeTraverseWithKey_ :: t5 -> SimpleCell t t1 t2 t3 t6 t4
-     -> (t5 -> DirectedKeyRaw t t1 t2 t3 -> t6 -> IO ())
+storeTraverseWithKey_ :: ck -> SimpleCell k src dst tm stlive stlive
+     -> (ck -> DirectedKeyRaw k src dst tm -> stlive -> IO ())
      -> IO ()
 storeTraverseWithKey_ ck (SimpleCell (CellCore tlive _) _ _ _) tvFcn  = do
   ioTraverseListT_ (\(key, cs) -> do
@@ -253,6 +253,8 @@ createCellCheckPointAndClose :: (SimpleCell k src dst tm st (SimpleStore CellKey
 createCellCheckPointAndClose    (SimpleCell (CellCore _ tvarFStore) _ _pdir _rdir ) =  do
   fStore <- readTVarIO tvarFStore
   void (createCheckpoint fStore)
+
+
 
 
 initializeSimpleCell'
