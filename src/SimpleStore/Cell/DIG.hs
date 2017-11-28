@@ -249,7 +249,7 @@ storeTraverseWithKey_ ck (SimpleCell (CellCore tlive _) _ _ _) tvFcn  = do
 
 
 
-createCellCheckPointAndClose :: (SimpleCell k src dst tm st (SimpleStore CellKeyStore))   -> IO ()
+createCellCheckPointAndClose :: SimpleCell k src dst tm st (SimpleStore CellKeyStore)   -> IO ()
 createCellCheckPointAndClose    (SimpleCell (CellCore _ tvarFStore) _ _pdir _rdir ) =  do
   fStore <- readTVarIO tvarFStore
   void (createCheckpoint fStore)
@@ -263,7 +263,7 @@ initializeSimpleCell'
   -> stlive
   -> Text
   -> IO ([StoreError], SimpleCell k src dst tm stlive (SimpleStore CellKeyStore))
-initializeSimpleCell' ck emptyTargetState root  = do
+initializeSimpleCell' ck _ root  = do
  parentWorkingDir   <- getWorkingDirectory
  let simpleRootPath = fromText root
      newWorkingDir  = simpleRootPath
@@ -303,7 +303,7 @@ initializeSimpleCell' ck emptyTargetState root  = do
       traverseLFcn  fp fkRaw = async $ traverseLFcn' fp fkRaw
       traverseLFcn' fp fkRaw = do
         let fpKey = fp </> (fromText . codeCellKeyFilename ck $ fkRaw)
-        est' <- openCKSt fpKey emptyTargetState
+        est' <- openSimpleStore fpKey 
 --        print $ "opened: " ++ show fpKey
         return $ fmap (\st' -> (fkRaw, st')) est'
 
@@ -337,6 +337,9 @@ initializeSimpleCellAndErrors ck emptyTargetState root = do
 
 
 
+
+-- shortcut function to grab all the lefts from a list and store them
+
 logAllLefts  :: [Either Text a] -> [Either StoreError b] -> IO ()
 logAllLefts directedKeyErrors stateList = logDirectedKeyErrors  *> logStoreErrors
   where
@@ -349,15 +352,21 @@ logAllLefts directedKeyErrors stateList = logDirectedKeyErrors  *> logStoreError
          | otherwise              = hPutStrLn stderr "StoreErrors " *>
                                     hPrint    stderr  (lefts stateList)
 
-openCKSt :: Serialize st =>
-             FilePath -> st -> IO (Either StoreError (SimpleStore st))
-openCKSt fpKey _emptyTargetState = openSimpleStore fpKey
 
--- -- | Exception and Error handling
+
+
+
+
+
+
+ -- | Exception and Error handling
 -- should the initialize wipe the state or fail.
 shouldInitializeFail :: StoreError -> Bool
 shouldInitializeFail  StoreFolderNotFound = True
 shouldInitializeFail  _                 = False
+
+
+
 
 
 createTwoCheckpoints  :: Serialize st => SimpleStore st -> IO (Either StoreError ())
