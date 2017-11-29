@@ -143,7 +143,7 @@ data SimpleCell  k src dst tm stlive stdormant = SimpleCell {
 ```
 
 * The `cellCore` is the internal in-memory representation of the map from keys to simple-stores.
-* The `cellKey` is the one provided by the user.  
+* The `cellKey` is the one provided by the user. 
 * The `cellParentFP` is the file path that the Root of the project is in
 * The `cellRootFP` is the file path that the cell occupies
 
@@ -156,4 +156,27 @@ very durable data storage.  Multiple backup versions of a store are kept.
 The important functions to access it are the `modifySimpleStore` and `updateSimpleStore`
 which are described in its documentation.
 
+
+# Usage guidelines for fast cells
+
+Simple Cell can be thought of as a persistence layer of a write optimized database.  
+However, it leaves it up to the user to make decisions as to how to use this layer.
+
+This can cause problems but here are a few guidelines.
+
+
+## Checkpoints take time
+Many systems can take over a second to do a checkpoint on a file.  
+
+If your writes are coming in at a faster pace than that you will need to tune the OS in order to get per modification 
+disk guarantees. 
+
+One very good option is to use the `creatCheckpointsXSC` function, which will checkpiont every store in your cell. 
+You can set this up in its own thread and then have your writes work asynchronously to the saving.  This isn't always ideal
+but often is a great way of handling the problem of disk access. 
+
+The createCheckpointsXSC happens synchronously so a good way to call it is ...
+``` haskell 
+forever (createCheckpointsXSC yourSimpleCell >> someDelay)
+```
 

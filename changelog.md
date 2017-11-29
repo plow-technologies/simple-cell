@@ -1,3 +1,5 @@
+# 2.8.1.0
+* Added createCheckpointsXSC to checkpoint every store in a given Cell.
 # 2.8.0.0
 * Return record `InitializedCell` in `initializeXXXStore` which carry the cell
   and any initialization errors.

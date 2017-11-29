@@ -1,5 +1,5 @@
 name: simple-cell
-version: '2.8.0.0'
+version: '2.8.1.0'
 synopsis: Batch Processing of resumable states
 description: SimpleCell uses SimpleStore and self generating keys to create batch operations on datatypes
 category: DB
