@@ -138,6 +138,13 @@ initializeSampleSC :: T.Text -> IO SampleCell
 
 initializeSampleWithErrorsSC :: T.Text -> IO (InitializedCell SampleKey SampleSrc SampleDst SampleTime Sample (SimpleStore CellKeyStore))
 
+
+  
+checkpointsSampleSC :: SimpleCell
+                               SampleKey SampleSrc SampleDst SampleTime Sample stdormant
+                             -> IO ()
+                              
+
 getOrInsertSampleSC
   :: SampleCell
   -> Sample
@@ -169,6 +176,9 @@ runRestartTest i = do
 
   putStrLn "store em"
   samples <- traverse (traverse getSimpleStore) storeSamples
+
+  putStrLn "Checkpoint Only "
+  checkpointsSampleSC sc
 
   putStrLn "checkpoint"
   createCheckpointAndCloseSampleSC sc'

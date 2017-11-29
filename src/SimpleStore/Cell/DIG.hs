@@ -25,6 +25,7 @@ module SimpleStore.Cell.DIG (
   , storeFoldrWithKey
   , storeTraverseWithKey_
   , createCellCheckPointAndClose
+  , checkpointAllStoresInCell
   ) where
 
 -- System
@@ -218,9 +219,9 @@ deleteStore ck (SimpleCell (CellCore liveMap tvarFStore) _ pdir rdir) dkr = do
         stmDelete       = M.delete dkr
                                     liveMap
 
-storeFoldrWithKey :: t6
-     -> SimpleCell t t1 t2 t3 t5 t4
-     -> (t6 -> DirectedKeyRaw t t1 t2 t3 -> t5 -> IO b -> IO b)
+storeFoldrWithKey :: ck
+     -> SimpleCell k src dst tm stlive stdormant
+     -> (ck -> DirectedKeyRaw k src dst tm -> stlive -> IO b -> IO b)
      -> IO b
      -> IO b
 storeFoldrWithKey ck (SimpleCell (CellCore tlive _) _ _ _) fldFcn seed = do
@@ -233,8 +234,8 @@ storeFoldrWithKey ck (SimpleCell (CellCore tlive _) _ _ _) fldFcn seed = do
                            seed keyValueListT
   innerIO
 
-storeTraverseWithKey_ :: t5 -> SimpleCell t t1 t2 t3 t6 t4
-     -> (t5 -> DirectedKeyRaw t t1 t2 t3 -> t6 -> IO ())
+storeTraverseWithKey_ :: ck -> SimpleCell k src dst tm stlive stdormant
+     -> (ck -> DirectedKeyRaw k src dst tm -> stlive -> IO ())
      -> IO ()
 storeTraverseWithKey_ ck (SimpleCell (CellCore tlive _) _ _ _) tvFcn  = do
   ioTraverseListT_ (\(key, cs) -> do
@@ -246,13 +247,20 @@ storeTraverseWithKey_ ck (SimpleCell (CellCore tlive _) _ _ _) tvFcn  = do
 
 
 
+checkpointAllStoresInCell  :: Serialize stlive => CellKey k src dst tm stlive -> SimpleCell k src dst tm stlive stdormant -> IO ()
+checkpointAllStoresInCell _ (SimpleCell (CellCore tlive _) _ _ _)  = do
+  ioTraverseListT_ (\(_, cs) -> do                   
+                   createCheckpoint cs) listTMapWrapper
+        where
+          listTMapWrapper = M.stream tlive
 
 
-
-createCellCheckPointAndClose :: (SimpleCell k src dst tm st (SimpleStore CellKeyStore))   -> IO ()
+createCellCheckPointAndClose :: SimpleCell k src dst tm st (SimpleStore CellKeyStore)   -> IO ()
 createCellCheckPointAndClose    (SimpleCell (CellCore _ tvarFStore) _ _pdir _rdir ) =  do
   fStore <- readTVarIO tvarFStore
   void (createCheckpoint fStore)
+
+
 
 
 initializeSimpleCell'
@@ -261,7 +269,7 @@ initializeSimpleCell'
   -> stlive
   -> Text
   -> IO ([StoreError], SimpleCell k src dst tm stlive (SimpleStore CellKeyStore))
-initializeSimpleCell' ck emptyTargetState root  = do
+initializeSimpleCell' ck _ root  = do
  parentWorkingDir   <- getWorkingDirectory
  let simpleRootPath = fromText root
      newWorkingDir  = simpleRootPath
@@ -301,7 +309,7 @@ initializeSimpleCell' ck emptyTargetState root  = do
       traverseLFcn  fp fkRaw = async $ traverseLFcn' fp fkRaw
       traverseLFcn' fp fkRaw = do
         let fpKey = fp </> (fromText . codeCellKeyFilename ck $ fkRaw)
-        est' <- openCKSt fpKey emptyTargetState
+        est' <- openSimpleStore fpKey 
 --        print $ "opened: " ++ show fpKey
         return $ fmap (\st' -> (fkRaw, st')) est'
 
@@ -335,6 +343,9 @@ initializeSimpleCellAndErrors ck emptyTargetState root = do
 
 
 
+
+-- shortcut function to grab all the lefts from a list and store them
+
 logAllLefts  :: [Either Text a] -> [Either StoreError b] -> IO ()
 logAllLefts directedKeyErrors stateList = logDirectedKeyErrors  *> logStoreErrors
   where
@@ -347,15 +358,21 @@ logAllLefts directedKeyErrors stateList = logDirectedKeyErrors  *> logStoreError
          | otherwise              = hPutStrLn stderr "StoreErrors " *>
                                     hPrint    stderr  (lefts stateList)
 
-openCKSt :: Serialize st =>
-             FilePath -> st -> IO (Either StoreError (SimpleStore st))
-openCKSt fpKey _emptyTargetState = openSimpleStore fpKey
 
--- -- | Exception and Error handling
+
+
+
+
+
+
+ -- | Exception and Error handling
 -- should the initialize wipe the state or fail.
 shouldInitializeFail :: StoreError -> Bool
 shouldInitializeFail  StoreFolderNotFound = True
 shouldInitializeFail  _                 = False
+
+
+
 
 
 createTwoCheckpoints  :: Serialize st => SimpleStore st -> IO (Either StoreError ())
