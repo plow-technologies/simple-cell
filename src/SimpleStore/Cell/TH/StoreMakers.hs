@@ -22,6 +22,7 @@ allStoreMakers = [ makeInitializeXSimpleCell
                  , makeDeleteXSimpleCell
                  , makeFoldlWithKeyXSimpleCell
                  , makeTraverseWithKeyXSimpleCell
+                 , makeCheckpointsXSimpleCell
                  , makeCreateCheckpointAndCloseXSimpleCell
                  , makeRepsertXSimpleCell
                  , makeGetXSimpleCell
@@ -128,6 +129,19 @@ buildTraverseWithKeyName stN = mkName . concat $ [ "traverseWithKey"
                                                  , nameBase stN
                                                  , "SC_"
                                                  ]
+
+
+makeCheckpointsXSimpleCell ::  CellKeyName -> InitializerName -> StoreName -> Q Dec
+makeCheckpointsXSimpleCell ckN _ stN = funD (buildCheckpointAllStoresInCellName stN)
+                                       [clause [] (normalB checkpointAllStoresInCellTH) []  ]
+  where
+    checkpointAllStoresInCellTH  = appE (varE 'checkpointAllStoresInCell )
+                                        (varE ckN)
+
+buildCheckpointAllStoresInCellName :: StoreName -> Name
+buildCheckpointAllStoresInCellName stN = mkName . concat $ [ "checkpoints"
+                                                           , nameBase stN
+                                                           , "SC" ]
 
 makeCreateCheckpointAndCloseXSimpleCell :: CellKeyName -> InitializerName -> StoreName -> Q Dec
 makeCreateCheckpointAndCloseXSimpleCell _ckN _ stN = funD (buildCheckPointAndCloseName stN)

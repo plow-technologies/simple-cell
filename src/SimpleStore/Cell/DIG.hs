@@ -25,6 +25,7 @@ module SimpleStore.Cell.DIG (
   , storeFoldrWithKey
   , storeTraverseWithKey_
   , createCellCheckPointAndClose
+  , checkpointAllStoresInCell
   ) where
 
 -- System
@@ -219,7 +220,7 @@ deleteStore ck (SimpleCell (CellCore liveMap tvarFStore) _ pdir rdir) dkr = do
                                     liveMap
 
 storeFoldrWithKey :: ck
-     -> SimpleCell k src dst tm stlive stlive           
+     -> SimpleCell k src dst tm stlive stdormant
      -> (ck -> DirectedKeyRaw k src dst tm -> stlive -> IO b -> IO b)
      -> IO b
      -> IO b
@@ -233,7 +234,7 @@ storeFoldrWithKey ck (SimpleCell (CellCore tlive _) _ _ _) fldFcn seed = do
                            seed keyValueListT
   innerIO
 
-storeTraverseWithKey_ :: ck -> SimpleCell k src dst tm stlive stlive
+storeTraverseWithKey_ :: ck -> SimpleCell k src dst tm stlive stdormant
      -> (ck -> DirectedKeyRaw k src dst tm -> stlive -> IO ())
      -> IO ()
 storeTraverseWithKey_ ck (SimpleCell (CellCore tlive _) _ _ _) tvFcn  = do
@@ -246,7 +247,12 @@ storeTraverseWithKey_ ck (SimpleCell (CellCore tlive _) _ _ _) tvFcn  = do
 
 
 
-
+checkpointAllStoresInCell  :: Serialize stlive => CellKey k src dst tm stlive -> SimpleCell k src dst tm stlive stdormant -> IO ()
+checkpointAllStoresInCell _ (SimpleCell (CellCore tlive _) _ _ _)  = do
+  ioTraverseListT_ (\(_, cs) -> do                   
+                   createCheckpoint cs) listTMapWrapper
+        where
+          listTMapWrapper = M.stream tlive
 
 
 createCellCheckPointAndClose :: SimpleCell k src dst tm st (SimpleStore CellKeyStore)   -> IO ()
