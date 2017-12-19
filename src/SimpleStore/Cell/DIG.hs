@@ -365,7 +365,7 @@ logAllLefts directedKeyErrors stateList = logDirectedKeyErrors  *> logStoreError
 
 
 
- -- | Exception and Error handling
+-- | Exception and Error handling
 -- should the initialize wipe the state or fail.
 shouldInitializeFail :: StoreError -> Bool
 shouldInitializeFail  StoreFolderNotFound = True
