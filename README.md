@@ -1,4 +1,4 @@
-[![Build Status](https://jenkins.plowtech.net/buildStatus/icon?job=simple-cell)](https://jenkins.plowtech.net/view/master/job/simple-cell/)
+
 # simple-cell
 Simple Cell takes a filename generating function and a Serializeable datatype
 it then generates the machinery to handle the creation of multiple atomic values of this type according to the unique keys of each one.
