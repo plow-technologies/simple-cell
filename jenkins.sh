@@ -71,14 +71,8 @@ in simple-cell-master)
       printf "\n"
       echo "case match simple-cell-master"
       echo "Update Plowtech Docset"
-      # Make sure stack path is the same as plow-stack path
-      cp global-stack.yaml stack.yaml
-      stackPath=$(stack path --dist-dir)
-      haddocset -t ~/docsets/Plowtech.docset add -s "$(stack path --local-pkg-db)"/*.conf
-      git reset --hard
-      cd ~/docsets
-      tar --exclude='.DS_Store' -czf Plowtech.tgz Plowtech.docset
-      rsync -avzPe ssh ~/docsets/Plowtech.tgz $TESTING_URL:~/docset/;;
+      stackPath=$(stack path --stack-yaml=global-stack.yaml --dist-dir)
+      haddocset -t ~/docsets/Plowtech.docset add -s "$(stack path --stack-yaml=global-stack.yaml --local-pkg-db)"/*.conf;;
 
    *)
       printf "\n"
